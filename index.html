@@ -1,0 +1,1473 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Getir OKR Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'getir-purple':'#5d3ebc',
+            'getir-yellow':'#ffd300',
+            'getir-purple-light':'#7156d9',
+            'getir-purple-dark':'#4e329e',
+            'dark-bg':'#0f0f23',
+            'dark-card':'#1a1b3a',
+            'glass':'rgba(255,255,255,0.05)'
+          },
+          animation:{
+            'float':'float 6s ease-in-out infinite',
+            'pulse-slow':'pulse 3s ease-in-out infinite',
+            'slide-up':'slideUp 0.5s ease-out',
+            'glow':'glow 2s ease-in-out infinite alternate',
+          },
+          keyframes:{
+            float:{'0%,100%':{transform:'translateY(0px)'},'50%':{transform:'translateY(-20px)'}},
+            slideUp:{'0%':{transform:'translateY(20px)',opacity:'0'},'100%':{transform:'translateY(0)',opacity:'1'}},
+            glow:{
+              '0%':{boxShadow:'0 0 5px rgba(93,62,188,.5),0 0 20px rgba(93,62,188,.3)'},
+              '100%':{boxShadow:'0 0 20px rgba(93,62,188,.8),0 0 40px rgba(93,62,188,.5)'}
+            }
+          },
+          backdropBlur:{'xs':'2px'}
+        }
+      }
+    }
+    if (window.Chart && window.ChartDataLabels) {
+      Chart.register(window.ChartDataLabels);
+      Chart.defaults.plugins.datalabels = { display: false };
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+    * {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+      background:
+        radial-gradient(circle at 20% 80%, rgba(120, 119, 198, .3), transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255, 119, 198, .3), transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(93, 62, 188, .2), transparent 50%);
+    }
+
+    .main-container {
+      position: relative;
+      z-index: 2;
+    }
+
+    .glass-morphism {
+      background: rgba(255, 255, 255, .1);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, .2);
+    }
+
+    .glass-morphism-dark {
+      background: rgba(0, 0, 0, .3);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, .1);
+    }
+
+    .progress-bar {
+      transition: width 1s cubic-bezier(.4, 0, .2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .progress-bar::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .3), transparent);
+      animation: shimmer 2s infinite;
+    }
+
+    @keyframes shimmer {
+      0% {
+        transform: translateX(-100%)
+      }
+
+      100% {
+        transform: translateX(100%)
+      }
+    }
+
+    .card-hover {
+      transition: all .4s cubic-bezier(.175, .885, .32, 1.275);
+    }
+
+    .card-hover:hover {
+      transform: translateY(-8px) scale(1.02);
+    }
+
+    .metric-card {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .metric-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255, 255, 255, .1) 0%, transparent 70%);
+      opacity: 0;
+      transition: opacity .3s ease;
+    }
+
+    .metric-card:hover::before {
+      opacity: 1;
+    }
+
+    .floating-orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(40px);
+      opacity: .5;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .orb-1 {
+      width: 300px;
+      height: 300px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      top: 10%;
+      left: 10%;
+      animation: float 8s ease-in-out infinite;
+    }
+
+    .orb-2 {
+      width: 200px;
+      height: 200px;
+      background: linear-gradient(135deg, #f093fb, #f5576c);
+      bottom: 10%;
+      right: 10%;
+      animation: float 10s ease-in-out infinite reverse;
+    }
+
+    .status-badge {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .status-badge::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .3), transparent);
+      animation: badge-shine 3s infinite;
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .chart-container {
+      position: relative;
+    }
+
+    .chart-glow {
+      filter: drop-shadow(0 0 10px rgba(93, 62, 188, .3));
+    }
+
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, .1);
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(135deg, #764ba2, #667eea);
+    }
+
+    .tooltip {
+      position: relative;
+    }
+
+    .tooltip-content {
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%) translateY(-8px);
+      background: rgba(0, 0, 0, .9);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .3s, transform .3s;
+    }
+
+    .tooltip:hover .tooltip-content {
+      opacity: 1;
+      transform: translateX(-50%) translateY(-12px);
+    }
+
+    .neon-glow {
+      box-shadow: 0 0 20px rgba(93, 62, 188, .5), 0 0 40px rgba(93, 62, 188, .3), 0 0 60px rgba(93, 62, 188, .1), inset 0 0 20px rgba(93, 62, 188, .05);
+    }
+
+    .target-card-highlight {
+      background: linear-gradient(135deg, rgba(93, 62, 188, .10), rgba(118, 75, 162, .10));
+      border: 2px solid rgba(93, 62, 188, .30);
+      border-radius: .75rem;
+    }
+
+    .filter-container {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height .3s ease-out;
+    }
+
+    .filter-container.expanded {
+      max-height: 500px;
+      transition: max-height .5s ease-in;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="floating-orb orb-1"></div>
+  <div class="floating-orb orb-2"></div>
+
+  <div class="main-container">
+    <!-- Top bar -->
+    <div class="glass-morphism-dark text-white shadow-2xl sticky top-0 z-50">
+      <div class="container mx-auto px-4 py-6">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-4">
+            <div class="relative">
+              <div class="absolute inset-0 bg-getir-yellow blur-xl opacity-50"></div>
+              <h1 class="text-3xl font-bold flex items-center relative">
+                <span class="bg-gradient-to-r from-getir-yellow to-yellow-300 text-getir-purple px-4 py-2 rounded-xl shadow-lg transform hover:scale-105 transition-transform">OKR</span>
+                <span class="ml-3 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">Dashboard</span>
+              </h1>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            <div class="tooltip">
+              <button class="p-2 rounded-lg glass-morphism hover:bg-white/10 transition-colors" onclick="loadDashboard()">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+              </button>
+              <span class="tooltip-content">Yenile</span>
+            </div>
+            <div class="text-sm">
+              <span id="lastUpdate" class="opacity-75 backdrop-blur-sm bg-white/5 px-3 py-1 rounded-full">Son güncelleme: -</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="glass-morphism shadow-xl border-b border-white/10 sticky top-20 z-40">
+      <div class="container mx-auto px-4 py-4">
+        <div class="flex justify-between items-center mb-3">
+          <h3 class="text-white font-semibold text-lg">Filtreler</h3>
+          <button onclick="toggleFilters()" class="text-white/80 hover:text-white transition-colors">
+            <svg id="filterToggleIcon" class="w-6 h-6 transform transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+        </div>
+
+        <div id="filterContainer" class="filter-container">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+            <!-- Depo -->
+            <div class="flex flex-col space-y-2">
+              <label class="text-sm font-medium text-white/80">Depo:</label>
+              <select id="warehouseFilter" class="px-4 py-2 glass-morphism border border-white/20 rounded-xl text-white focus:ring-2 focus:ring-getir-purple focus:border-transparent transition-all hover:bg-white/10">
+                <option value="all" class="bg-gray-800">Tümü</option>
+              </select>
+            </div>
+
+            <!-- Domain -->
+            <div class="flex flex-col space-y-2">
+              <label class="text-sm font-medium text-white/80">Domain:</label>
+              <select id="domainFilter" class="px-4 py-2 glass-morphism border border-white/20 rounded-xl text-white focus:ring-2 focus:ring-getir-purple focus:border-transparent transition-all hover:bg-white/10">
+                <option value="all" class="bg-gray-800">Tümü</option>
+              </select>
+            </div>
+
+            <!-- Operasyon Müdürü -->
+            <div class="flex flex-col space-y-2">
+              <label class="text-sm font-medium text-white/80">Operasyon Müdürü:</label>
+              <select id="operasyonMuduruFilter" class="px-4 py-2 glass-morphism border border-white/20 rounded-xl text-white focus:ring-2 focus:ring-getir-purple focus:border-transparent transition-all hover:bg-white/10">
+                <option value="all" class="bg-gray-800">Tümü</option>
+              </select>
+            </div>
+
+            <!-- Bölge Müdürü -->
+            <div class="flex flex-col space-y-2">
+              <label class="text-sm font-medium text-white/80">Bölge Müdürü:</label>
+              <select id="bolgeMuduruFilter" class="px-4 py-2 glass-morphism border border-white/20 rounded-xl text-white focus:ring-2 focus:ring-getir-purple focus:border-transparent transition-all hover:bg-white/10">
+                <option value="all" class="bg-gray-800">Tümü</option>
+              </select>
+            </div>
+
+            <!-- Saha Yöneticisi -->
+            <div class="flex flex-col space-y-2">
+              <label class="text-sm font-medium text-white/80">Saha Yöneticisi:</label>
+              <select id="sahaYoneticisiFilter" class="px-4 py-2 glass-morphism border border-white/20 rounded-xl text-white focus:ring-2 focus:ring-getir-purple focus:border-transparent transition-all hover:bg-white/10">
+                <option value="all" class="bg-gray-800">Tümü</option>
+              </select>
+            </div>
+
+            <!-- Butonlar -->
+            <div class="flex flex-col space-y-2 justify-end">
+              <div class="flex space-x-2">
+                <button onclick="applyFilters()" class="flex-1 px-6 py-2 bg-gradient-to-r from-getir-purple to-getir-purple-light text-white rounded-xl hover:shadow-lg hover:shadow-getir-purple/50 transform hover:scale-105 transition-all duration-300 font-medium">
+                  Filtrele
+                </button>
+                <button onclick="resetFilters()" class="flex-1 px-6 py-2 glass-morphism text-white rounded-xl hover:bg-white/20 transition-all duration-300 font-medium border border-white/20">
+                  Sıfırla
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary + Progress + Metrics -->
+<div class="container mx-auto px-4 py-8">
+
+  <!-- Summary cards -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+
+    <!-- TOPLAM OKR -->
+    <div class="glass-morphism rounded-2xl p-6 card-hover metric-card border border-white/20 animate-slide-up"
+         style="animation-delay:.1s">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-white/60 text-sm font-medium uppercase tracking-wider">Toplam OKR</p>
+          <p id="totalOKRs" class="text-4xl font-bold text-white mt-2">-</p>
+
+          <p class="text-2xl font-bold text-white/90 mt-1">
+            <span id="uniqueOKRs">-</span>
+            <span class="text-sm font-medium text-white/70 ml-1">benzersiz aktif hedef</span>
+          </p>
+          <p id="uniqueOKRNote" class="text-white/50 text-xs mt-1">
+            Not: Toplam OKR, G10 / GMore domain kırılımı ayrı sayıldığı için benzersiz hedeften yüksektir.
+          </p>
+        </div>
+        <div class="bg-gradient-to-br from-getir-purple/30 to-getir-purple-light/30 p-4 rounded-2xl backdrop-blur-sm">
+          <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
+            </path>
+          </svg>
+        </div>
+      </div>
+
+      <div class="mt-4 flex items-center text-white/60 text-sm">
+        <span class="inline-flex items-center">
+          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+          </svg>
+          Aktif hedefler
+        </span>
+      </div>
+    </div>
+
+    <!-- DEPO ÖZETİ -->
+    <div class="glass-morphism rounded-2xl p-6 card-hover metric-card border border-white/20 animate-slide-up"
+         style="animation-delay:.2s">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-white/60 text-sm font-medium uppercase tracking-wider">Depo Özeti</p>
+          <p class="text-4xl font-bold text-white mt-2" id="whTotal">-</p>
+        </div>
+        <div class="bg-gradient-to-br from-getir-yellow/30 to-yellow-300/30 p-4 rounded-2xl backdrop-blur-sm">
+          <svg class="w-8 h-8 text-getir-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3 7l9-4 9 4M4 10h16v8a2 2 0 01-2 2H6a2 2 0 01-2-2v-8z" />
+          </svg>
+        </div>
+      </div>
+
+      <div class="mt-4 space-y-2 text-white/80 text-sm">
+        <div class="flex justify-between"><span>G10 Depo</span><span class="font-semibold" id="whG10">-</span></div>
+        <div class="flex justify-between"><span>GMore Depo</span><span class="font-semibold" id="whGMore">-</span></div>
+        <div class="pt-2 mt-2 border-t border-white/10">
+          <div class="flex items-center justify-between">
+            <span class="text-white/60">Son hafta &lt;85% availability</span>
+            <span id="whAvailWeek" class="text-white/50 text-xs"></span>
+          </div>
+          <div class="mt-2 grid grid-cols-2 gap-2 text-xs">
+            <div class="px-3 py-2 rounded-lg bg-white/10 backdrop-blur-sm flex justify-between">
+              <span>G10</span><span class="font-bold" id="whBelowG10">-</span>
+            </div>
+            <div class="px-3 py-2 rounded-lg bg-white/10 backdrop-blur-sm flex justify-between">
+              <span>GMore</span><span class="font-bold" id="whBelowGMore">-</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HEDEFTE -->
+    <div class="glass-morphism rounded-2xl p-6 card-hover metric-card border border-green-400/30 animate-slide-up neon-glow"
+         style="animation-delay:.3s">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-green-300/80 text-sm font-medium uppercase tracking-wider">Hedefte</p>
+          <p id="onTrack" class="text-4xl font-bold text-green-400 mt-2">-</p>
+        </div>
+        <div class="bg-gradient-to-br from-green-500/30 to-green-600/30 p-4 rounded-2xl backdrop-blur-sm">
+          <svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+      </div>
+      <div class="mt-4">
+        <div class="flex items-center justify-between text-green-300/60 text-xs">
+          <span>Başarı oranı</span>
+          <span id="onTrackRateText" class="font-semibold">0%</span>
+        </div>
+        <div class="mt-2 h-2 bg-green-900/30 rounded-full overflow-hidden">
+          <div id="onTrackBar"
+               class="h-full progress-bar bg-gradient-to-r from-green-400 to-green-500 rounded-full"
+               style="width:0%" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HEDEFİN GERİSİNDE -->
+    <div class="glass-morphism rounded-2xl p-6 card-hover metric-card border border-red-400/30 animate-slide-up"
+         style="animation-delay:.4s">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-red-300/80 text-sm font-medium uppercase tracking-wider">Hedefin Gerisinde</p>
+          <p id="offTrack" class="text-4xl font-bold text-red-400 mt-2">-</p>
+        </div>
+        <div class="bg-gradient-to-br from-red-500/30 to-red-600/30 p-4 rounded-2xl backdrop-blur-sm">
+          <svg class="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+      </div>
+      <div class="mt-4">
+        <div class="flex items-center justify-between text-red-300/60 text-xs">
+          <span>Acil müdahale</span>
+          <span id="offTrackRateText" class="font-semibold">0%</span>
+        </div>
+        <div class="mt-2 h-2 bg-red-900/30 rounded-full overflow-hidden">
+          <div id="offTrackBar"
+               class="h-full progress-bar bg-gradient-to-r from-red-400 to-red-500 rounded-full"
+               style="width:0%" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /grid -->
+
+  <!-- Genel İlerleme -->
+  <div class="glass-morphism rounded-2xl p-8 mb-8 border border-white/20">
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-2xl font-bold text-white flex items-center">
+        <span class="w-1 h-8 bg-gradient-to-b from-getir-purple to-getir-purple-light rounded-full mr-3"></span>
+        Genel İlerleme
+      </h2>
+      <div class="flex items-center space-x-2">
+        <span class="px-3 py-1 rounded-full text-xs font-medium bg-white/10 text-white/80">Canlı</span>
+        <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+      </div>
+    </div>
+    <div class="relative">
+      <div class="flex mb-3 items-center justify-between">
+        <div><span class="text-sm font-semibold text-white/80 uppercase tracking-wider">ORTALAMA İLERLEME</span></div>
+        <div class="text-right">
+          <span id="avgProgressText"
+                class="text-2xl font-bold bg-gradient-to-r from-getir-purple to-getir-purple-light bg-clip-text text-transparent">0%</span>
+        </div>
+      </div>
+      <div class="overflow-hidden h-6 mb-4 text-xs flex rounded-2xl bg-white/10 backdrop-blur-sm">
+        <div id="avgProgressBar" style="width:0%"
+             class="progress-bar shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center
+                    bg-gradient-to-r from-getir-purple via-getir-purple-light to-purple-400 rounded-2xl">
+        </div>
+      </div>
+      <div class="grid grid-cols-3 gap-4 mt-6">
+        <div class="text-center">
+          <p class="text-white/60 text-xs uppercase">Min</p>
+          <p class="text-white font-semibold">0%</p>
+        </div>
+        <div class="text-center">
+          <p class="text-white/60 text-xs uppercase">Hedef</p>
+          <p class="text-white font-semibold">85%</p>
+        </div>
+        <div class="text-center">
+          <p class="text-white/60 text-xs uppercase">Max</p>
+          <p class="text-white font-semibold">100%</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Metric Cards -->
+  <div id="okrContainer" class="space-y-8"></div>
+
+</div><!-- /container -->
+
+  <script>
+    // [NEW] Modal state
+let lastWarehouseModal = { rows: [], metricName:'', domain:'', unit:'' };
+
+// [NEW] Metrik notları (UI'ye küçük bir satır düşer)
+function getMetricNoteText(name){
+  if (name === "Decrease missed order ratio") return "(son 4 ayın hedefi baz alınacaktır)";
+  if (name === "Decrease lateness percent") return "(son 4 ayın hedefi baz alınacaktır)";
+  if (name === "Decrease non-agreed / problematic shipment ratios") return "(son 3 ayın hedefi baz alınacaktır)";
+  return "";
+}
+function getMetricNoteHTML(name){
+  const t = getMetricNoteText(name);
+  return t ? `<p class="text-xs text-white/60 italic mt-1">${t}</p>` : "";
+}
+
+function renderWarehouseSummary(s){
+  const set = (id, v)=>{ const el=document.getElementById(id); if (el) el.textContent = (v ?? '-') };
+  if (!s){ set('whTotal','-'); set('whG10','-'); set('whGMore','-'); set('whBelowG10','-'); set('whBelowGMore','-'); set('whAvailWeek',''); return; }
+  set('whTotal', s.total);
+  set('whG10', s.g10);
+  set('whGMore', s.gmore);
+  set('whBelowG10', s.below85?.G10 ?? 0);
+  set('whBelowGMore', s.below85?.GMore ?? 0);
+  set('whAvailWeek', s.lastWeek ? s.lastWeek : '');
+}
+
+// [NEW] Depo detayı destekleyen metrikler
+function metricSupportsWarehouse(name){
+  // Depo boyutu olmayan/uygun olmayanlar: Waste A&M ratio, Pallet backlog (Ops)
+  return ![
+    "Achieve Waste + Waste A&M ratio target",
+    "Decrease the number of pending + rejected pallet backlog (Ops)"
+  ].includes(name);
+}
+
+// [NEW] Depo Detay modalını aç
+function showWarehouseModal(metricName, domain, unit){
+  try{
+    // 1) Önce loading state'i kur, modalı hemen aç
+    lastWarehouseModal = { rows: null, metricName, domain, unit: (unit || '') }; // rows:null => loading
+    renderWarehouseModalList();                       // skeleton çiz
+    const m = document.getElementById('warehouseModal');
+    m.classList.remove('hidden');
+    m.setAttribute('aria-busy','true');
+
+    // 2) Filtreleri hazırla
+    const filters = {
+      warehouse:        document.getElementById('warehouseFilter').value,
+      domain:           document.getElementById('domainFilter').value,
+      sahaYoneticisi:   document.getElementById('sahaYoneticisiFilter').value,
+      operasyonMuduru:  document.getElementById('operasyonMuduruFilter').value,
+      bolgeMuduru:      document.getElementById('bolgeMuduruFilter').value
+    };
+
+    // 3) Veriyi iste, gelince skeleton'u gerçek tabloyla değiştir
+    google.script.run
+      .withSuccessHandler((rows)=>{
+        lastWarehouseModal.rows = Array.isArray(rows) ? rows : [];
+        renderWarehouseModalList();
+        m.removeAttribute('aria-busy');
+      })
+      .withFailureHandler(()=>{
+        lastWarehouseModal.rows = []; // hata/kayıt yok → boş mesaj
+        renderWarehouseModalList();
+        m.removeAttribute('aria-busy');
+      })
+      .getUnderperformingWarehouses(metricName, domain, filters);
+  }catch(e){ console.error(e); }
+}
+
+function setExportEnabled(enabled){
+  const csvBtn = document.getElementById('exportCsvBtn');
+  const sheetsBtn = document.getElementById('exportSheetsBtn');
+  
+  [csvBtn, sheetsBtn].forEach(btn => {
+    if (!btn) return;
+    btn.disabled = !enabled;
+    btn.classList.toggle('opacity-50', !enabled);
+    btn.classList.toggle('cursor-not-allowed', !enabled);
+  });
+}
+
+// [NEW] Modal içeriğini doldur
+function renderWarehouseModalList(){
+  const title = document.getElementById('warehouseModalTitle');
+  const sub   = document.getElementById('warehouseModalSubtitle');
+  const body  = document.getElementById('warehouseModalBody');
+  const {rows, metricName, domain, unit} = lastWarehouseModal;
+
+  title.textContent = 'Depo Detayları';
+  sub.innerHTML = `${metricName} • ${domain}`;
+
+  body.innerHTML = '';
+
+  // --- LOADING: rows === null → skeleton + bilgi metni
+  if (rows === null){
+    sub.innerHTML = `${metricName} • ${domain} <span class="ml-2 px-2 py-0.5 text-xs rounded bg-white/10">Yükleniyor…</span>`;
+    setExportEnabled(false);
+
+    // 6–8 satırlık skeleton
+    for(let i=0;i<8;i++){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="px-4 py-3"><div class="h-4 w-32 bg-white/10 rounded animate-pulse"></div></td>
+        <td class="px-4 py-3"><div class="h-4 w-20 bg-white/10 rounded animate-pulse"></div></td>
+        <td class="px-4 py-3"><div class="h-4 w-16 bg-white/10 rounded animate-pulse"></div></td>
+        <td class="px-4 py-3"><div class="h-4 w-16 bg-white/10 rounded animate-pulse"></div></td>
+        <td class="px-4 py-3"><div class="h-6 w-20 bg-white/10 rounded-full animate-pulse"></div></td>`;
+      body.appendChild(tr);
+    }
+    return;
+  }
+
+  // --- DATA YOK / HATA
+  if (!rows.length){
+    setExportEnabled(false);
+    body.innerHTML = `<tr><td colspan="5" class="px-4 py-6 text-white/60">Hedefi kaçıran depo bulunamadı.</td></tr>`;
+    return;
+  }
+
+  // --- DATA VAR
+  setExportEnabled(true);
+  rows.forEach(r=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="px-4 py-2">${r.warehouse || '-'}</td>
+      <td class="px-4 py-2">${r.domain || '-'}</td>
+      <td class="px-4 py-2">${formatValue(r.value, unit)}</td>
+      <td class="px-4 py-2">${(r.targetText || (r.targetValue!=null ? formatValue(r.targetValue, unit) : '-'))}</td>
+      <td class="px-4 py-2">
+        <span class="px-2 py-1 rounded-lg text-xs font-semibold ${r.hit ? 'bg-green-400/20 text-green-400 border border-green-400/30' : 'bg-red-400/20 text-red-400 border border-red-400/30'}">
+          ${r.hit ? 'Hedefte' : 'Geride'}
+        </span>
+      </td>`;
+    body.appendChild(tr);
+  });
+}
+
+// [NEW] Modal kapat
+function closeWarehouseModal(){
+  document.getElementById('warehouseModal').classList.add('hidden');
+}
+
+// [NEW] Excel (CSV) export - Türkiye locale'ine uygun format
+function exportWarehouseModalToCSV(){
+  const {rows, metricName, domain, unit} = lastWarehouseModal;
+  const header = ['Depo','Domain','Değer','Hedef','Durum'];
+  const delim = ';';
+  const csvRows = [];
+  csvRows.push(header.join(delim));
+  
+  // Türkiye locale'i için sayı formatı
+  const formatNumber = (value, unit) => {
+    if (value == null || value === '') return '';
+    const num = Number(value);
+    if (!isFinite(num)) return value;
+    
+    // Türkçe locale: virgül ondalık ayırıcı, nokta binlik ayırıcı
+    let formatted = num.toLocaleString('tr-TR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+    
+    // Birim ekleme
+    if (unit === '%') formatted += '%';
+    else if (unit === '₺') formatted = '₺' + formatted;
+    else if (unit === 'pp') formatted += ' pp';
+    
+    return formatted;
+  };
+  
+  (rows || []).forEach(r=>{
+    const line = [
+      (r.warehouse||''),
+      (r.domain||''),
+      formatNumber(r.value, unit),
+      (r.targetText || formatNumber(r.targetValue, unit)),
+      (r.hit ? 'Hedefte' : 'Geride')
+    ].map(v=>{
+      const s = String(v).replace(/"/g,'""');
+      return `"${s}"`;
+    }).join(delim);
+    csvRows.push(line);
+  });
+  
+  const csvContent = '\uFEFF' + csvRows.join('\r\n'); // BOM + CRLF
+  const blob = new Blob([csvContent], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const safeMetric = metricName.replace(/[^\w\- ]+/g,'').replace(/\s+/g,'_');
+  a.href = url;
+  a.download = `${safeMetric}_${domain}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  URL.revokeObjectURL(url);
+  a.remove();
+}
+
+// [NEW] Google Sheets export - gelişmiş hata yönetimi
+function exportWarehouseModalToSheets(){
+  const {rows, metricName, domain, unit} = lastWarehouseModal;
+  if (!rows || !rows.length) {
+    alert('Aktarılacak veri bulunamadı.');
+    return;
+  }
+  
+  // Loading state
+  const btn = document.getElementById('exportSheetsBtn');
+  const originalText = btn.innerHTML;
+  btn.innerHTML = '⏳ Oluşturuluyor...';
+  btn.disabled = true;
+  
+  // Timeout için timer
+  const timeoutId = setTimeout(() => {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+    showErrorMessage('İşlem zaman aşımına uğradı. Lütfen tekrar deneyin.');
+  }, 30000); // 30 saniye timeout
+  
+  // Backend'e gönder
+  google.script.run
+    .withSuccessHandler((url) => {
+      clearTimeout(timeoutId);
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+      
+      if (url && url.startsWith('http')) {
+        // Popup blocker'a karşı link göster
+        showSheetLinkModal(url, metricName, domain);
+      } else {
+        // Backend'den hata mesajı geldi
+        showErrorMessage(url || 'Bilinmeyen hata oluştu.');
+      }
+    })
+    .withFailureHandler((error) => {
+      clearTimeout(timeoutId);
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+      
+      console.error('Sheets export error:', error);
+      
+      // Yaygın hataları kullanıcı dostu mesajlara çevir
+      let message = 'Google Sheets oluşturulamadı.';
+      if (error.message) {
+        if (error.message.includes('permission')) {
+          message = 'İzin hatası: Lütfen Getir hesabınızla giriş yaptığınızdan emin olun.';
+        } else if (error.message.includes('quota')) {
+          message = 'Günlük limit aşıldı. Lütfen yarın tekrar deneyin veya CSV export kullanın.';
+        } else if (error.message.includes('timeout')) {
+          message = 'İşlem zaman aşımına uğradı. Lütfen tekrar deneyin.';
+        } else {
+          message = 'Hata: ' + error.message;
+        }
+      }
+      
+      showErrorMessage(message);
+    })
+    .exportToGoogleSheets(metricName, domain, unit || '', rows);
+}
+
+function showSheetLinkModal(url, metricName, domain) {
+  const modal = document.createElement('div');
+  modal.className = 'fixed inset-0 z-[300] flex items-center justify-center bg-black/60';
+  modal.innerHTML = `
+    <div class="bg-white rounded-2xl p-8 max-w-md mx-4 animate-slide-up">
+      <div class="text-center mb-6">
+        <div class="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+        </div>
+        <h3 class="text-xl font-bold text-gray-800 mb-2">Google Sheets Hazır!</h3>
+        <p class="text-gray-600 text-sm">${metricName} - ${domain}</p>
+      </div>
+      
+      <div class="space-y-4">
+        <a href="${url}" target="_blank" 
+           class="block w-full px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-xl text-center hover:shadow-lg transition-all">
+          📊 Sheet'i Aç
+        </a>
+        
+        <div class="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg">
+          <p class="font-medium mb-1">Link kopyalamak için:</p>
+          <input type="text" value="${url}" readonly 
+                 class="w-full p-2 text-xs border border-gray-300 rounded bg-white" 
+                 onclick="this.select(); document.execCommand('copy');">
+        </div>
+        
+        <button onclick="this.closest('.fixed').remove()" 
+                class="w-full px-4 py-2 text-gray-600 border border-gray-300 rounded-xl hover:bg-gray-50">
+          Kapat
+        </button>
+      </div>
+    </div>`;
+  
+  document.body.appendChild(modal);
+  
+  // Success toast
+  showSuccessMessage('Google Sheets başarıyla oluşturuldu!');
+}
+
+function showSuccessMessage(text) {
+  const toast = document.createElement('div');
+  toast.className = 'fixed top-4 right-4 z-[200] bg-green-500 text-white px-6 py-3 rounded-xl shadow-lg animate-slide-up';
+  toast.innerHTML = '✅ ' + text;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 4000);
+}
+
+function showErrorMessage(text) {
+  const toast = document.createElement('div');
+  toast.className = 'fixed top-4 right-4 z-[200] bg-red-500 text-white px-6 py-3 rounded-xl shadow-lg animate-slide-up';
+  toast.innerHTML = '❌ ' + text;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 6000);
+}
+
+    // Dummy kartları göstermek için URL'e ?dummy=1 ekleyebilirsin
+    const SHOW_DUMMY = new URLSearchParams(location.search).get('dummy') === '1';
+    let currentData = [];
+    let charts = {};
+    let filtersExpanded = false;
+    let summaryFromServer = false; // server özeti geldi mi?
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadFilterOptions();
+      loadDashboard();
+      toggleFilters(); // varsayılan açık
+    });
+
+    function hasHitTarget(current, target, isIncrease, behavior, unit){
+  const c = Number(current), t = Number(target);
+  if (!isFinite(c) || !isFinite(t)) return false;
+  if (behavior === 'decrease_to_zero_numeric') return c <= 0;
+  return isIncrease ? (c >= t) : (c <= t);
+}
+
+function getStatus(progress, hit){
+  return hit ? { label:'Hedefte' } : { label:'Geride' };
+}
+
+    function toggleFilters() {
+      const container = document.getElementById('filterContainer');
+      const icon = document.getElementById('filterToggleIcon');
+      filtersExpanded = !filtersExpanded;
+      if (filtersExpanded) { container.classList.add('expanded'); icon.style.transform = 'rotate(180deg)'; }
+      else { container.classList.remove('expanded'); icon.style.transform = 'rotate(0deg)'; }
+    }
+
+    function loadFilterOptions(){
+      google.script.run
+        .withSuccessHandler((options)=>{
+          if (!options) return;
+          populateSelect('warehouseFilter', options.warehouses || ['all']);
+          populateSelect('domainFilter', options.domains || ['all']);
+          // weekFilter YOK
+          populateSelect('sahaYoneticisiFilter', options.sahaYoneticileri || ['all']);
+          populateSelect('operasyonMuduruFilter', options.operasyonMudurleri || ['all']);
+          populateSelect('bolgeMuduruFilter', options.bolgeMudurleri || ['all']);
+        })
+        .withFailureHandler(()=>{
+          populateSelect('warehouseFilter',['all']);
+          populateSelect('domainFilter',['all','G10','GMore']);
+          populateSelect('sahaYoneticisiFilter',['all']);
+          populateSelect('operasyonMuduruFilter',['all']);
+          populateSelect('bolgeMuduruFilter',['all']);
+        })
+        .getFilterOptions();
+    }
+
+    function populateSelect(id, options){
+      const el = document.getElementById(id);
+      el.innerHTML = '';
+      (options || []).forEach(optVal=>{
+        const opt=document.createElement('option');
+        opt.value = optVal;
+        opt.textContent = optVal==='all' ? 'Tümü' : optVal;
+        opt.className='bg-gray-800';
+        el.appendChild(opt);
+      });
+    }
+
+    function loadDashboard(){
+      try{
+        showLoading();
+        summaryFromServer = false;
+
+        const filters = {
+          warehouse:        document.getElementById('warehouseFilter').value,
+          domain:           document.getElementById('domainFilter').value,
+          sahaYoneticisi:   document.getElementById('sahaYoneticisiFilter').value,
+          operasyonMuduru:  document.getElementById('operasyonMuduruFilter').value,
+          bolgeMuduru:      document.getElementById('bolgeMuduruFilter').value
+        };
+
+        // Server özet
+        google.script.run
+          .withSuccessHandler((summary)=>{
+            if (summary && typeof summary === 'object') {
+              summaryFromServer = true;
+              renderSummaryCards(summary);
+            }
+          })
+          .withFailureHandler(()=>{/* sessiz geç */})
+          .getDashboardSummary(filters);
+
+        // Depo özeti
+google.script.run
+  .withSuccessHandler(renderWarehouseSummary)
+  .withFailureHandler(()=>renderWarehouseSummary(null))
+  .getWarehouseSummary(filters);
+
+        // OKR verileri
+        google.script.run
+          .withSuccessHandler((data)=>{
+            if (!data) { hideLoading(); return; }
+            currentData = data;
+            renderOKRCards(data);
+            renderUniqueOKRCount(data);
+
+            // Server özeti gelmediyse client yedeği (dummy'leri hariç tutar)
+            if (!summaryFromServer) {
+              try { renderSummaryCards(computeClientSummary(data)); } catch {}
+            }
+
+            hideLoading();
+            updateLastUpdateTime();
+          })
+          .withFailureHandler(()=>{ hideLoading(); })
+          .getOKRData(filters);
+
+      }catch(e){ console.error('loadDashboard error:', e); hideLoading(); }
+    }
+
+    function getMetricPriority(metricName) {
+      if (!metricName) return 999;
+      
+      const name = String(metricName).toLowerCase();
+      
+      // Öncelik sıralaması
+      if (name.includes('missed order ratio')) return 0;
+      if (name.includes('lateness percent')) return 1;
+      if (name.includes('problematic')) return 2;
+      
+      // Diğer tüm metrikler
+      return 999;
+    }
+
+    function renderOKRCards(data){
+      const container = document.getElementById('okrContainer');
+      container.innerHTML = '';
+
+      if (!data || data.length===0){
+        container.innerHTML = `
+          <div class="glass-morphism rounded-2xl p-12 text-center">
+            <svg class="w-24 h-24 mx-auto text-white/30 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            <p class="text-white/60 text-lg">Veri bulunamadı</p>
+          </div>`;
+        return;
+      }
+
+      // Metrikleri önceliğe göre sırala
+      const sortedData = data.slice().sort((a, b) => {
+        const priorityA = getMetricPriority(a?.name);
+        const priorityB = getMetricPriority(b?.name);
+        return priorityA - priorityB;
+      });
+
+      sortedData.forEach((metric, idx)=>{
+        if (metric?._isDummy && !SHOW_DUMMY) return;
+        if (metric && metric.data && metric.data.length>0){
+          const card = createOKRCard(metric, idx);
+          container.appendChild(card);
+        }
+      });
+    }
+
+    function createOKRCard(metric, index){
+  const safeMetricName = (metric.name || '').replace(/'/g, "\\'");
+  const card = document.createElement('div');
+  card.className = 'glass-morphism rounded-2xl p-8 card-hover border border-white/20 animate-slide-up';
+  card.style.animationDelay = `${index*0.1}s`;
+
+  const domainOrder = ['G10','GMore','MultiTarget'];
+  const domains = (metric.data||[])
+    .slice()
+    .sort((a,b)=>domainOrder.indexOf(a.domain)-domainOrder.indexOf(b.domain));
+
+  const gridCols = domains.length === 1 ? 'grid grid-cols-1' : 'grid grid-cols-1 lg:grid-cols-2';
+
+  let html = `
+    <div class="mb-6">
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="text-2xl font-bold text-white flex items-center">
+          <span class="w-1 h-8 bg-gradient-to-b from-getir-yellow to-yellow-300 rounded-full mr-3"></span>
+          ${metric.name}
+        </h3>
+        <span class="px-3 py-1 rounded-full text-xs font-medium bg-white/10 text-white/80 backdrop-blur-sm">
+          ${ metric.unit ? metric.unit : ((metric.name||'').toLowerCase().includes('throughput') ? '#' : '%') }
+        </span>
+      </div>
+      ${getMetricNoteHTML(metric.name)}
+      <div class="${gridCols} gap-6">`;
+
+  domains.forEach((d, i) => {
+    if (!d || !d.domain || d.targetValue == null) return;
+
+    const isIncrease = (metric.name||'').toLowerCase().includes('increase');
+    const progress   = calculateProgress(d.currentValue, d.targetValue, isIncrease, metric.unit, metric.behavior);
+    const hit        = hasHitTarget(d.currentValue, d.targetValue, isIncrease, metric.behavior, metric.unit);
+    const status     = getStatus(progress, hit);
+    const chartId    = `chart-${index}-${i}`;
+    const isMulti    = d.domain === 'MultiTarget';
+
+    html += `
+      <div class="target-card-highlight rounded-xl p-6 hover:shadow-2xl transition-all duration-500">
+        <div class="flex justify-between items-center mb-4">
+          <span class="text-lg font-bold px-4 py-2 rounded-xl ${
+            d.domain==='G10'
+              ? 'bg-gradient-to-r from-getir-purple to-getir-purple-light text-white shadow-lg'
+              : (d.domain==='GMore'
+                  ? 'bg-gradient-to-r from-getir-yellow to-yellow-300 text-getir-purple shadow-lg'
+                  : 'bg-white/10 text-white border border-white/20 shadow-lg')
+          }">${d.domain}</span>
+
+          <div class="flex items-center gap-2">
+            <span class="status-badge px-3 py-1 rounded-full text-sm font-bold ${
+              status.label==='Hedefte'
+                ? 'bg-green-400/20 text-green-400 border border-green-400/30'
+                : 'bg-red-400/20 text-red-400 border border-red-400/30'
+            }">${status.label}</span>
+
+            ${
+              (metricSupportsWarehouse(metric.name) && d.domain!=='MultiTarget')
+                ? `<button class="ml-2 px-3 py-1 rounded-lg text-xs font-semibold bg-white/10 text-white border border-white/20 hover:bg-white/20 transition"
+                    onclick="showWarehouseModal('${safeMetricName}','${d.domain}','${metric.unit ? metric.unit : ''}')">
+                    Depo Detay
+                   </button>`
+                : ``
+            }
+          </div>
+        </div>
+
+        ${isMulti ? `<p class="text-xs text-white/60 italic mb-4">
+          İlgili metrik aylık güncellenmektedir, G10+GB verileri merge edilmiştir
+        </p>` : ``}
+
+        <div class="grid grid-cols-2 gap-6 mb-6">
+          <div class="text-center p-4 rounded-xl bg-white/5 backdrop-blur-sm">
+            <p class="text-xs text-white/60 uppercase tracking-wider mb-2">Mevcut</p>
+            <p class="text-3xl font-bold ${status.label==='Hedefte' ? 'text-green-400' : 'text-red-400'}">
+              ${formatValue(d.currentValue, metric.unit)}
+            </p>
+          </div>
+          <div class="text-center p-4 rounded-xl bg-white/5 backdrop-blur-sm">
+            <p class="text-xs text-white/60 uppercase tracking-wider mb-2">Hedef</p>
+            <p class="text-3xl font-bold text-white">${formatValue(d.targetValue, metric.unit)}</p>
+          </div>
+        </div>
+
+        <div class="mb-6">
+          <div class="flex justify-between text-sm text-white/80 mb-2">
+            <span class="font-medium">İlerleme</span>
+            <span class="font-bold text-lg">${Math.round(progress)}%</span>
+          </div>
+          <div class="overflow-hidden h-3 text-xs flex rounded-full bg-white/10 backdrop-blur-sm">
+            <div style="width:${progress}%" class="progress-bar shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center ${
+              status.label==='Hedefte'
+                ? 'bg-gradient-to-r from-green-400 to-green-500'
+                : 'bg-gradient-to-r from-red-400 to-red-500'
+            } rounded-full"></div>
+          </div>
+        </div>
+
+        <div class="h-32 chart-container chart-glow">
+          <canvas id="${chartId}"></canvas>
+        </div>
+      </div>`;
+  });
+
+  html += `</div></div>`;
+  card.innerHTML = html;
+
+  setTimeout(() => {
+    domains.forEach((d, i) => {
+      try {
+        if (d && d.weeklyData && d.weeklyData.length > 0) {
+          createTrendChart(`chart-${index}-${i}`, d, metric.unit);
+        }
+      } catch (e) { console.error('Grafik oluşturma hatası:', e); }
+    });
+  }, 100);
+
+  return card;
+}
+
+// ---- SUMMARY (client fallback: dummy hariç) ----
+function computeClientSummary(okrs){
+  const summary = { totalOKRs: 0, onTrack: 0, atRisk: 0, offTrack: 0, avgProgress: 0 };
+  let total = 0, count = 0;
+
+  (okrs || []).forEach(metric => {
+    if (!metric || metric._isDummy) return;
+
+    const isIncrease = (metric.name || '').toLowerCase().includes('increase');
+    const unit = metric.unit || '';
+    const behavior = metric.behavior || null;
+
+    (metric.data || []).forEach(d => {
+      if (!d || d.targetValue == null) return;
+
+      summary.totalOKRs++;
+
+      const progress = calculateProgress(d.currentValue, d.targetValue, isIncrease, unit, behavior);
+      total += progress; count++;
+
+      const hit = hasHitTarget(d.currentValue, d.targetValue, isIncrease, behavior, unit);
+      if (hit) summary.onTrack++;
+      else     summary.offTrack++;
+    });
+  });
+
+  if (count > 0) summary.avgProgress = total / count;
+  summary.atRisk = 0; // risk metriği yok
+  return summary;
+}
+
+function renderSummaryCards(summary){
+  const $ = (id) => document.getElementById(id);
+  const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
+
+  // --- Sayaçları animasyonla yaz ---
+  const animateNumber = (el, target)=>{
+    if (!el) return;
+    const duration = 1000, step = 16;
+    const inc = (target || 0) / (duration/step);
+    let cur = 0;
+    const t = setInterval(()=>{
+      cur += inc;
+      if (cur >= (target || 0)){ el.textContent = (target || 0); clearInterval(t); }
+      else { el.textContent = Math.floor(cur); }
+    }, step);
+  };
+
+  animateNumber($('totalOKRs'), summary?.totalOKRs ?? 0);
+  animateNumber($('onTrack'),   summary?.onTrack   ?? 0);
+
+  // Risk kartı artık yoksa güvenli geç
+  const atRiskEl = $('atRisk');
+  if (atRiskEl) animateNumber(atRiskEl, summary?.atRisk ?? 0);
+
+  animateNumber($('offTrack'),  summary?.offTrack  ?? 0);
+
+  // --- Ortalama ilerleme barı ---
+  const avg = Math.round(summary?.avgProgress || 0);
+  if ($('avgProgressText')) $('avgProgressText').textContent = avg + '%';
+  if ($('avgProgressBar'))  $('avgProgressBar').style.width  = clamp(avg,0,100) + '%';
+
+  // --- Üstteki iki küçük bar: Hedefte / Hedefin Gerisinde ---
+  const total = Number(summary?.totalOKRs ?? 0);
+  const on    = Number(summary?.onTrack   ?? 0);
+  const off   = Number(summary?.offTrack  ?? 0);
+
+  const onRate  = total > 0 ? Math.round((on  / total) * 100) : 0;
+  const offRate = total > 0 ? Math.round((off / total) * 100) : 0;
+
+  const setBar = (barId, textId, val) => {
+    const bar = $(barId);
+    const txt = $(textId);
+    const v = clamp(Number.isFinite(val) ? val : 0, 0, 100);
+    if (txt) txt.textContent = v + '%';
+    if (bar) {
+      bar.style.width = v + '%';               // .progress-bar css'inle animasyonlu akar
+      bar.setAttribute('aria-valuenow', v);    // erişilebilirlik
+    }
+  };
+
+  setBar('onTrackBar',  'onTrackRateText',  onRate);
+  setBar('offTrackBar', 'offTrackRateText', offRate);
+}
+
+    // Benzersiz (domain'e bölünmemiş) aktif hedef sayısı
+function computeUniqueActiveCount(okrs){
+  const names = new Set();
+  (okrs || []).forEach(m => {
+    // dummy metrikleri ve datası olmayanları hariç tut
+    if (m?._isDummy) return;
+    const hasActive = (m?.data || []).some(d => d && d.targetValue != null);
+    if (hasActive && m?.name) names.add(m.name);
+  });
+  return names.size;
+}
+
+function renderUniqueOKRCount(okrs){
+  const el = document.getElementById('uniqueOKRs');
+  if (!el) return;
+  const n = computeUniqueActiveCount(okrs);
+  el.textContent = n;
+}
+
+    // ---- UTIL ----
+    function calculateProgress(current, target, isIncrease, unit='%', behavior=null){
+      if (current==null || target==null) return 0;
+      const clamp=v=>Math.max(0,Math.min(100,v));
+      const c=Number(current); const t=Number(target);
+
+      if (!isIncrease && behavior==='decrease_to_zero_numeric'){ return clamp(100 / (1 + Math.max(0,c))); }
+
+      if (isIncrease){
+        if (!isFinite(t) || t<=0) return 0;
+        return clamp((c/t)*100);
+      } else {
+  if (isFinite(t) && t > 0) {
+    // daha yumuşak: hedefe oran
+    return clamp(100 * Math.min(1, t / Math.max(c, 1e-9)));
+  }
+  return unit === '%' ? clamp(100 - c) : clamp(100 / (1 + Math.max(0, c)));
+}
+    }
+
+    function formatValue(value, unit){
+      const n = Number(value);
+      if (!isFinite(n)) return '-';
+      if (unit==='₺') return unit + n.toFixed(2);
+      if (unit==='pp') return n.toFixed(0) + ' ' + unit;
+      return n.toFixed(2) + (unit || '');
+    }
+
+    // === Trend grafiği: SARI tema ===
+    function createTrendChart(canvasId, data, unit = '%') {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (charts[canvasId]) charts[canvasId].destroy();
+
+      const labels = (data.weeklyData || []).map(d => d.week);
+      const values = (data.weeklyData || []).map(d => Math.round(Number(d.value) * 100) / 100);
+      if (!values.length) return;
+
+      const vMin = Math.min(...values);
+      const vMax = Math.max(...values);
+      const pad = (vMax - vMin || vMax || 1) * 0.2;
+
+      const lineColor = '#FFD300';
+      const areaColor = 'rgba(255, 211, 0, 0.18)';
+      const pointBorder = '#FFD300';
+
+      charts[canvasId] = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            data: values,
+            borderColor: lineColor,
+            backgroundColor: areaColor,
+            borderWidth: 2.5,
+            tension: 0.35,
+            pointRadius: 3.5,
+            pointHoverRadius: 6,
+            pointBackgroundColor: '#ffffff',
+            pointBorderColor: pointBorder,
+            pointBorderWidth: 2,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          layout: { padding: { top: 22, right: 18, bottom: 10, left: 18 } },
+          interaction: { intersect: false, mode: 'index' },
+          plugins: {
+            legend: { display: false },
+            datalabels: {
+              display: true,
+              color: '#ffffff',
+              backgroundColor: 'rgba(0,0,0,0.45)',
+              borderRadius: 4,
+              padding: { top: 2, bottom: 2, left: 4, right: 4 },
+              font: { size: 10, weight: '600' },
+              offset: 6,
+              clamp: true,
+              clip: false,
+              align: (c) => {
+                const el = c.element;
+                const area = c.chart && c.chart.chartArea;
+                if (!el || !area) return 'top';
+                const py = el.y;
+                const pad = 14;
+                if (py <= area.top + pad) return 'bottom';
+                if (py >= area.bottom - pad) return 'top';
+                return 'top';
+              },
+              anchor: 'end',
+              formatter: (v) => {
+                const num = Number(v);
+                if (!Number.isFinite(num)) return '';
+                const fixed = (Math.round(num * 100) / 100).toFixed(2);
+                return unit ? `${fixed}${unit}` : fixed;
+              }
+            },
+            tooltip: {
+              enabled: true,
+              backgroundColor: 'rgba(0,0,0,.9)',
+              titleColor: '#fff',
+              bodyColor: '#fff',
+              padding: 12,
+              cornerRadius: 8,
+              titleFont: { size: 12, weight: 'normal' },
+              bodyFont: { size: 14, weight: 'bold' },
+              callbacks: {
+                title(items) {
+                  const raw = items[0]?.label ?? '';
+                  if (/^W\d+$/.test(String(raw))) {
+                    const n = parseInt(String(raw).replace(/\D/g,''), 10);
+                    return Number.isFinite(n) && n>0 ? n + '. Hafta' : raw;
+                  }
+                  return raw;
+                },
+                label(c) {
+                  const val = Number(c.parsed?.y ?? c.raw);
+                  const fixed = (Math.round(val * 100) / 100).toFixed(2);
+                  return unit ? `${fixed}${unit}` : fixed;
+                }
+              }
+            }
+          },
+          scales: {
+            x: { display: false, grid: { display: false }, offset: true, ticks: { padding: 8 } },
+            y: { display: false, grid: { display: false }, grace: '20%', suggestedMin: vMin - pad, suggestedMax: vMax + pad }
+          }
+        }
+      });
+    }
+
+    function applyFilters(){ loadDashboard(); }
+    function resetFilters(){
+      document.getElementById('warehouseFilter').value='all';
+      document.getElementById('domainFilter').value='all';
+      // weekFilter yok
+      document.getElementById('sahaYoneticisiFilter').value='all';
+      document.getElementById('operasyonMuduruFilter').value='all';
+      document.getElementById('bolgeMuduruFilter').value='all';
+      loadDashboard();
+    }
+
+    function updateLastUpdateTime(){
+      const now = new Date();
+      document.getElementById('lastUpdate').textContent = 'Son güncelleme: ' + now.toLocaleString('tr-TR');
+    }
+
+    function showLoading(){
+      document.getElementById('okrContainer').innerHTML = `
+        <div class="text-center py-16">
+          <div class="inline-flex items-center">
+            <div class="relative">
+              <div class="w-16 h-16 border-4 border-white/20 border-t-getir-purple rounded-full animate-spin"></div>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <div class="w-8 h-8 bg-gradient-to-br from-getir-purple to-getir-purple-light rounded-full animate-pulse"></div>
+              </div>
+            </div>
+            <span class="ml-4 text-white text-lg font-medium">Veriler yükleniyor...</span>
+          </div>
+        </div>`;
+    }
+    function hideLoading(){ /* no-op */ }
+  </script>
+
+  <!-- Depo Detay Modal -->
+  <div id="warehouseModal" class="fixed inset-0 z-[100] hidden">
+    <div class="absolute inset-0 bg-black/60" onclick="closeWarehouseModal()"></div>
+    <div class="relative max-w-4xl mx-auto mt-24 glass-morphism rounded-2xl p-6 border border-white/20">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 id="warehouseModalTitle" class="text-xl font-bold text-white">Depo Detayları</h3>
+          <p id="warehouseModalSubtitle" class="text-white/60 text-sm"></p>
+        </div>
+        <div class="flex gap-2">
+          <button id="exportSheetsBtn"
+                  class="px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all"
+                  onclick="exportWarehouseModalToSheets()">
+            Google Sheets'e Aktar
+          </button>
+          <button id="exportCsvBtn"
+                  class="px-4 py-2 bg-gradient-to-r from-getir-yellow to-yellow-300 text-getir-purple font-semibold rounded-xl hover:shadow-lg"
+                  onclick="exportWarehouseModalToCSV()">
+            Excel'e Aktar (CSV)
+          </button>
+          <button class="px-4 py-2 glass-morphism text-white rounded-xl border border-white/20"
+                  onclick="closeWarehouseModal()">Kapat</button>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto max-h-[60vh] rounded-xl">
+        <table class="min-w-full text-sm">
+          <thead class="sticky top-0 bg-white/10 text-white/80 backdrop-blur-sm">
+            <tr>
+              <th class="text-left px-4 py-3">Depo</th>
+              <th class="text-left px-4 py-3">Domain</th>
+              <th class="text-left px-4 py-3">Değer</th>
+              <th class="text-left px-4 py-3">Hedef</th>
+              <th class="text-left px-4 py-3">Durum</th>
+            </tr>
+          </thead>
+          <tbody id="warehouseModalBody" class="bg-white/5 text-white"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>

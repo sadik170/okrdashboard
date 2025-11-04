@@ -873,16 +873,25 @@ function loadPastActions(warehouse){
 
   google.script.run
     .withSuccessHandler((plans)=>{
+      console.log('FRONTEND: Received action plans for', warehouse, ':', plans);
+      console.log('FRONTEND: Plans count:', plans?.length);
+
       const el = document.getElementById(id);
-      if (!el) return;
+      if (!el) {
+        console.error('FRONTEND: Element not found:', id);
+        return;
+      }
 
       if (!plans || !plans.length) {
+        console.log('FRONTEND: No plans to display for', warehouse);
         el.innerHTML = '<p class="text-xs text-white/40 italic">Geçmiş aksiyon bulunamadı.</p>';
         return;
       }
 
+      console.log('FRONTEND: Rendering', plans.length, 'plans for', warehouse);
       let html = '<div class="space-y-2">';
       plans.forEach(p => {
+        console.log('FRONTEND: Processing plan:', p);
         const dateStr = p.date ? new Date(p.date).toLocaleDateString('tr-TR') : '-';
         html += `
           <div class="bg-white/5 p-3 rounded-lg">
@@ -895,8 +904,11 @@ function loadPastActions(warehouse){
       });
       html += '</div>';
       el.innerHTML = html;
+      console.log('FRONTEND: Action plans rendered successfully for', warehouse);
     })
-    .withFailureHandler(()=>{})
+    .withFailureHandler((error)=>{
+      console.error('FRONTEND: getActionPlans failed for', warehouse, ':', error);
+    })
     .getActionPlans(metricName, domain, warehouse, 4);
 }
 
@@ -1202,8 +1214,15 @@ google.script.run
 
         // Performans Tabloları
         google.script.run
-          .withSuccessHandler(renderPerformanceTables)
-          .withFailureHandler(()=>{/* sessiz geç */})
+          .withSuccessHandler((data)=>{
+            console.log('FRONTEND: Received performance data:', data);
+            console.log('FRONTEND: Ops count:', data?.operasyonMudurleri?.length);
+            console.log('FRONTEND: Saha count:', data?.sahaYoneticileri?.length);
+            renderPerformanceTables(data);
+          })
+          .withFailureHandler((error)=>{
+            console.error('FRONTEND: getManagerPerformance failed:', error);
+          })
           .getManagerPerformance(filters);
 
         // OKR verileri

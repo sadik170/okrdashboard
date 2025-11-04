@@ -1951,19 +1951,25 @@ function getManagerPerformance(filters = {}) {
 
 function calculatePersonPerformance(personName, role, filters) {
   try {
+    console.log('=== calculatePersonPerformance START for:', personName, 'role:', role);
+
     const personFilters = { ...filters };
     if (role === 'operasyonMuduru') personFilters.operasyonMuduru = personName;
     else if (role === 'sahaYoneticisi') personFilters.sahaYoneticisi = personName;
 
+    console.log('Calling getOKRData with filters:', personFilters);
     const data = getOKRData(personFilters);
 
     if (!data || data.length === 0) {
-      console.log('No OKR data returned for:', personName, 'role:', role);
+      console.log('No OKR data returned for:', personName);
       return null;
     }
+    console.log('OKR data returned:', data.length, 'metrics');
 
     const personTargets = getPersonTargets();
     const normalizedName = _normName(personName);
+    console.log('Person normalized name:', normalizedName);
+    console.log('Person has custom targets:', !!personTargets[normalizedName]);
 
     const performance = {
       name: personName,
@@ -1985,11 +1991,14 @@ function calculatePersonPerformance(personName, role, filters) {
       const unit = metric.unit || '';
       const behavior = metric.behavior || null;
 
+      console.log('Processing metric:', metricName, 'data count:', metric.data.length);
+
       // MultiTarget metrikleri atla (depo bazlı değil)
       // Ve throughput'u atla (yönetici bazlı hesaplanamaz)
       if (["Achieve Waste + Waste A&M ratio target",
            "Decrease the number of pending + rejected pallet backlog (Ops)",
            "Increase throughput for G10 and GMore"].includes(metricName)) {
+        console.log('Skipping metric (multi-target or throughput):', metricName);
         return;
       }
 
@@ -2000,11 +2009,18 @@ function calculatePersonPerformance(personName, role, filters) {
 
       // Domain bazlı verileri topla
       metric.data.forEach(d => {
-        if (!d || d.targetValue == null) return;
+        if (!d || d.targetValue == null) {
+          console.log('Skipping domain data (no target):', d?.domain);
+          return;
+        }
+
+        console.log('Domain:', d.domain, 'currentValue:', d.currentValue, 'targetValue:', d.targetValue);
 
         // Kişi hedefi varsa onu kullan, yoksa domain hedefini kullan
         const personTarget = personTargets[normalizedName]?.[metricName];
         const target = personTarget != null ? personTarget : d.targetValue;
+
+        console.log('Using target:', target, '(person target:', personTarget, ')');
 
         if (currentValue === null) {
           currentValue = d.currentValue;
@@ -2020,6 +2036,8 @@ function calculatePersonPerformance(personName, role, filters) {
         progress = _computeProgressServer(isIncrease, unit, behavior, currentValue, targetValue);
         hit = _hitServer(isIncrease, unit, behavior, currentValue, targetValue);
 
+        console.log('Metric result:', metricName, 'current:', currentValue, 'target:', targetValue, 'progress:', progress, 'hit:', hit);
+
         performance.metrics[metricName] = {
           current: currentValue,
           target: targetValue,
@@ -2032,6 +2050,8 @@ function calculatePersonPerformance(personName, role, filters) {
         progressCount++;
         performance.totalCount++;
         if (hit) performance.hitCount++;
+      } else {
+        console.log('Metric skipped (no valid values):', metricName);
       }
     });
 
@@ -2039,9 +2059,11 @@ function calculatePersonPerformance(personName, role, filters) {
       performance.overallProgress = totalProgress / progressCount;
     }
 
+    console.log('=== calculatePersonPerformance END:', personName, 'progressCount:', progressCount, 'overallProgress:', performance.overallProgress);
+
     // Eğer hiç metrik yoksa null döndür
     if (progressCount === 0) {
-      console.log('No metrics calculated for:', personName);
+      console.log('No metrics calculated for:', personName, '- returning null');
       return null;
     }
 

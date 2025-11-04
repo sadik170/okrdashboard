@@ -612,6 +612,10 @@
           <option value="G10">G10</option>
           <option value="GMore">GMore</option>
         </select>
+        <select id="chronicMetricFilter" class="px-4 py-2 glass-morphism border border-white/20 rounded-xl text-white"
+                onchange="loadChronicAnalysis()">
+          <option value="all">Tüm Metrikler</option>
+        </select>
         <button onclick="loadChronicAnalysis()" class="px-4 py-2 bg-gradient-to-r from-getir-purple to-getir-purple-light text-white rounded-xl hover:shadow-lg">
           🔄 Yenile
         </button>
@@ -1970,14 +1974,36 @@ function renderUniqueOKRCount(okrs){
         tabDashboard.className = 'px-6 py-3 rounded-t-xl font-semibold transition-all bg-white/5 text-white/60 hover:bg-white/10';
         tabChronic.className = 'px-6 py-3 rounded-t-xl font-semibold transition-all bg-white/20 text-white border-b-2 border-getir-yellow';
 
+        // Metrik listesini doldur
+        populateChronicMetricFilter();
         // Kronik depo analizini yükle
         loadChronicAnalysis();
       }
     }
 
     // === KRONİK DEPO ANALİZİ ===
+    function populateChronicMetricFilter() {
+      const select = document.getElementById('chronicMetricFilter');
+      if (!select || !currentData) return;
+
+      const metrics = currentData
+        .filter(m => !m._isDummy)
+        .map(m => m.name)
+        .filter(name => !["Achieve Waste + Waste A&M ratio target",
+                         "Decrease the number of pending + rejected pallet backlog (Ops)"].includes(name));
+
+      select.innerHTML = '<option value="all">Tüm Metrikler</option>';
+      metrics.forEach(metric => {
+        const option = document.createElement('option');
+        option.value = metric;
+        option.textContent = metric;
+        select.appendChild(option);
+      });
+    }
+
     function loadChronicAnalysis() {
       const domain = document.getElementById('chronicDomainFilter').value;
+      const metricName = document.getElementById('chronicMetricFilter').value;
       const content = document.getElementById('chronicContent');
 
       content.innerHTML = '<div class="text-center text-white/60 py-12">Yükleniyor...</div>';
@@ -1987,7 +2013,7 @@ function renderUniqueOKRCount(okrs){
         .withFailureHandler(() => {
           content.innerHTML = '<div class="text-center text-red-400 py-12">Veri yüklenemedi.</div>';
         })
-        .getChronicWarehouseAnalysis(domain, 4);
+        .getChronicWarehouseAnalysis(domain, 4, metricName);
     }
 
     function renderChronicAnalysis(data) {

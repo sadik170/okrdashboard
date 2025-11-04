@@ -1157,6 +1157,7 @@ function getUnderperformingWarehouses(metricName, domain, filters) {
       if (d !== dom) return;
       if (!applyManagerFilters(wh, d, filters)) return;
       if (!_isWeek27Plus(w)) return;
+      if (filters.week && filters.week !== 'all' && _normWeek(filters.week) !== w) return;
       weekSet.add(w);
     });
     const weeks = Array.from(weekSet).sort((a, b) => _weekNum(a) - _weekNum(b));
@@ -1203,6 +1204,7 @@ function getUnderperformingWarehouses(metricName, domain, filters) {
       if (d !== dom) return; if (!applyManagerFilters(wh, d, filters)) return;
       if (useW31 ? !_isWeek31Plus(w) : !_isWeek27Plus(w)) return;
       if (filters.week && filters.week !== 'all' && _normWeek(filters.week) !== w) return;
+      if (filters.week && filters.week !== 'all' && _normWeek(filters.week) !== w) return;
       add(wh, { late, ord });
     });
   } else if (metricName === "Increase stock accuracy in dark stores") {
@@ -1211,6 +1213,7 @@ function getUnderperformingWarehouses(metricName, domain, filters) {
       const A = +r[3] || 0, B = +r[4] || 0;
       if (d !== dom) return; if (!applyManagerFilters(wh, d, filters)) return;
       if (!_isWeek27Plus(w)) return;
+      if (filters.week && filters.week !== 'all' && _normWeek(filters.week) !== w) return;
       add(wh, { A, B });
     });
   } else if (metricName === "Increase throughput for G10 and GMore") {
@@ -1219,6 +1222,7 @@ function getUnderperformingWarehouses(metricName, domain, filters) {
       const orders = +r[3] || 0, hrs = +r[4] || 0;
       if (d !== dom) return; if (!applyManagerFilters(wh, d, filters)) return;
       if (!_isWeek27Plus(w)) return;
+      if (filters.week && filters.week !== 'all' && _normWeek(filters.week) !== w) return;
       add(wh, { orders, hrs });
     });
   } else if (metricName === "Decrease missed order ratio") {
@@ -1227,6 +1231,7 @@ function getUnderperformingWarehouses(metricName, domain, filters) {
       const del = +r[3] || 0, miss = +r[4] || 0;
       if (d !== dom) return; if (!applyManagerFilters(wh, d, filters)) return;
       if (useW31 ? !_isWeek31Plus(w) : !_isWeek27Plus(w)) return;
+      if (filters.week && filters.week !== 'all' && _normWeek(filters.week) !== w) return;
       add(wh, { del, miss });
     });
   } else if (metricName === "Decrease the problematic order ratio (G10 and GMore)") {
@@ -1235,6 +1240,7 @@ function getUnderperformingWarehouses(metricName, domain, filters) {
       const ord = +r[3] || 0, fb = +r[4] || 0;
       if (d !== dom) return; if (!applyManagerFilters(wh, d, filters)) return;
       if (!_isWeek27Plus(w)) return;
+      if (filters.week && filters.week !== 'all' && _normWeek(filters.week) !== w) return;
       add(wh, { ord, fb });
     });
   } else if (metricName === "Decrease non-agreed / problematic shipment ratios") {
@@ -1243,6 +1249,7 @@ function getUnderperformingWarehouses(metricName, domain, filters) {
       const prob = _toNum(r[3]) || 0, total = _toNum(r[4]) || 0;
       if (d !== dom) return; if (!applyManagerFilters(wh, d, filters)) return;
       if (!_isWeek27Plus(w)) return;
+      if (filters.week && filters.week !== 'all' && _normWeek(filters.week) !== w) return;
       add(wh, { prob, total });
     });
   } else if (metricName === "Achieve LMD variable cost per order target for G10 and GMore (Courier + Fleet)") {
@@ -1251,6 +1258,7 @@ function getUnderperformingWarehouses(metricName, domain, filters) {
       const courier = +r[3] || 0, fleet = +r[4] || 0, ord = +r[5] || 0;
       if (d !== dom) return; if (!applyManagerFilters(wh, d, filters)) return;
       if (!_isWeek27Plus(w)) return;
+      if (filters.week && filters.week !== 'all' && _normWeek(filters.week) !== w) return;
       add(wh, { cost: (courier + fleet), ord });
     });
   } else if (metricName === "Increase Franchise Satisfaction Score") {
@@ -1259,6 +1267,7 @@ function getUnderperformingWarehouses(metricName, domain, filters) {
       const score = _toNum(r[3]) ?? 0;
       if (d !== dom) return; if (!applyManagerFilters(wh, d, filters)) return;
       if (!_isWeek27Plus(w)) return;
+      if (filters.week && filters.week !== 'all' && _normWeek(filters.week) !== w) return;
       add(wh, { sum: score, cnt: 1 });
     });
   } else if (metricName === "Increase GMore fresh order penetration") {
@@ -1267,6 +1276,7 @@ function getUnderperformingWarehouses(metricName, domain, filters) {
       const other = +r[3] || 0, fv = +r[4] || 0;
       if (d !== 'GMore') return; if (!applyManagerFilters(wh, d, filters)) return;
       if (!_isWeek27Plus(w)) return;
+      if (filters.week && filters.week !== 'all' && _normWeek(filters.week) !== w) return;
       add(wh, { other, fv });
     });
   } else if (metricName === "Decrease GMore customer quality complaint rate (problematic order) F&V") {
@@ -1275,6 +1285,7 @@ function getUnderperformingWarehouses(metricName, domain, filters) {
       const ord = +r[3] || 0, fb = +r[4] || 0;
       if (d !== 'GMore') return; if (!applyManagerFilters(wh, d, filters)) return;
       if (!_isWeek27Plus(w)) return;
+      if (filters.week && filters.week !== 'all' && _normWeek(filters.week) !== w) return;
       add(wh, { ord, fb });
     });
   }
@@ -2188,7 +2199,7 @@ function getActionPlans(metricName, domain, warehouse, weeks = 4) {
  * Haftalık bazda depoların performansını analiz eder
  * Kronik olarak hedef altında kalanları, iyileşenleri, kötüleşenleri tespit eder
  */
-function getChronicWarehouseAnalysis(domain = 'all', minWeeks = 4) {
+function getChronicWarehouseAnalysis(domain = 'all', minWeeks = 4, metricName = 'all') {
   try {
     const result = {
       chronic: [],      // Kronik olarak hedef altında kalanlar
@@ -2200,7 +2211,7 @@ function getChronicWarehouseAnalysis(domain = 'all', minWeeks = 4) {
     const domains = domain === 'all' ? ['G10', 'GMore'] : [domain];
 
     domains.forEach(dom => {
-      const analysis = analyzeWarehousesByDomain(dom, minWeeks);
+      const analysis = analyzeWarehousesByDomain(dom, minWeeks, metricName);
       result.chronic = result.chronic.concat(analysis.chronic);
       result.improving = result.improving.concat(analysis.improving);
       result.declining = result.declining.concat(analysis.declining);
@@ -2214,7 +2225,7 @@ function getChronicWarehouseAnalysis(domain = 'all', minWeeks = 4) {
   }
 }
 
-function analyzeWarehousesByDomain(domain, minWeeks) {
+function analyzeWarehousesByDomain(domain, minWeeks, metricName = 'all') {
   const warehouses = {};
   const chronic = [];
   const improving = [];
@@ -2222,6 +2233,11 @@ function analyzeWarehousesByDomain(domain, minWeeks) {
 
   // Her metrik için depo performanslarını topla
   OKR_METRICS.forEach(metric => {
+    // Metrik filtresi varsa sadece o metriği işle
+    if (metricName !== 'all' && metric.name !== metricName) {
+      return;
+    }
+
     // MultiTarget metrikleri atla
     if (["Achieve Waste + Waste A&M ratio target",
          "Decrease the number of pending + rejected pallet backlog (Ops)"].includes(metric.name)) {
@@ -2265,8 +2281,8 @@ function analyzeWarehousesByDomain(domain, minWeeks) {
           warehouse: wh,
           domain: domain,
           weeksBelowTarget: 0,
-          totalWeeks: 0,
-          trend: [],
+          weeksSet: new Set(), // Benzersiz haftaları tutmak için
+          weeklyPerformance: {}, // Her hafta için performans
           recentPerformance: 0
         };
       }
@@ -2277,20 +2293,41 @@ function analyzeWarehousesByDomain(domain, minWeeks) {
         const weekData = warehouseWeekly[wh][week];
         const successRate = weekData.metricsTotal > 0 ? (weekData.metricsMet / weekData.metricsTotal) * 100 : 0;
 
-        warehouses[wh].totalWeeks++;
-        warehouses[wh].trend.push(successRate);
+        warehouses[wh].weeksSet.add(week); // Benzersiz hafta ekle
 
-        if (successRate < 50) { // %50'nin altındaysa hedef altı sayılır
-          warehouses[wh].weeksBelowTarget++;
+        // Her hafta için ortalama performans
+        if (!warehouses[wh].weeklyPerformance[week]) {
+          warehouses[wh].weeklyPerformance[week] = {sum: 0, count: 0};
         }
+        warehouses[wh].weeklyPerformance[week].sum += successRate;
+        warehouses[wh].weeklyPerformance[week].count++;
       });
-
-      // Son 3 haftanın ortalaması
-      const recentTrend = warehouses[wh].trend.slice(-3);
-      warehouses[wh].recentPerformance = recentTrend.length > 0
-        ? recentTrend.reduce((a, b) => a + b, 0) / recentTrend.length
-        : 0;
     });
+  });
+
+  // Her depo için trend ve istatistikleri hesapla
+  Object.values(warehouses).forEach(wh => {
+    wh.totalWeeks = wh.weeksSet.size; // Benzersiz hafta sayısı
+
+    // Haftaları sıralı şekilde trend'e çevir
+    const sortedWeeks = Array.from(wh.weeksSet).sort((a, b) => _weekNum(a) - _weekNum(b));
+    wh.trend = sortedWeeks.map(week => {
+      const perf = wh.weeklyPerformance[week];
+      return perf.count > 0 ? perf.sum / perf.count : 0;
+    });
+
+    // Hedef altı hafta sayısı
+    wh.weeksBelowTarget = wh.trend.filter(rate => rate < 50).length;
+
+    // Son 3 haftanın ortalaması
+    const recentTrend = wh.trend.slice(-3);
+    wh.recentPerformance = recentTrend.length > 0
+      ? recentTrend.reduce((a, b) => a + b, 0) / recentTrend.length
+      : 0;
+
+    // Cleanup: Set ve weeklyPerformance'ı sil
+    delete wh.weeksSet;
+    delete wh.weeklyPerformance;
   });
 
   // Sınıflandırma

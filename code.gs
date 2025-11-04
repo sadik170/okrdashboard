@@ -1204,7 +1204,6 @@ function getUnderperformingWarehouses(metricName, domain, filters) {
       if (d !== dom) return; if (!applyManagerFilters(wh, d, filters)) return;
       if (useW31 ? !_isWeek31Plus(w) : !_isWeek27Plus(w)) return;
       if (filters.week && filters.week !== 'all' && _normWeek(filters.week) !== w) return;
-      if (filters.week && filters.week !== 'all' && _normWeek(filters.week) !== w) return;
       add(wh, { late, ord });
     });
   } else if (metricName === "Increase stock accuracy in dark stores") {

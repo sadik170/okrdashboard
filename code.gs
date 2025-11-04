@@ -358,8 +358,13 @@ function calculateWHBelow85Data(sheetData, filters) {
       .filter(_isWeek27Plus)
       .sort((a, b) => _weekNum(a) - _weekNum(b));
     if (!weeks.length) return;
-    const latest = weeks[weeks.length - 1];
-    const cur = d.weeklyData[latest].belowCount;
+
+    // Hafta filtresi: seçili hafta varsa onu kullan, yoksa son haftayı kullan
+    const targetWeek = (filters.week && filters.week !== 'all')
+      ? filters.week
+      : weeks[weeks.length - 1];
+
+    const cur = d.weeklyData[targetWeek]?.belowCount || 0;
 
     const data = {
       domain: d.domain,
@@ -368,6 +373,7 @@ function calculateWHBelow85Data(sheetData, filters) {
       weeklyData: [],
       trend: []
     };
+    // Trend için TÜM haftaları kullan (grafik hafta filtresinden etkilenmez)
     weeks.forEach(w => {
       const val = d.weeklyData[w].belowCount;
       data.weeklyData.push({ week: w, value: val });
@@ -398,7 +404,6 @@ function calculateLatenessData(sheetData, filters) {
     const weeks = Object.keys(d.weekly).filter(_isWeek31Plus).sort((a, b) => _weekNum(a) - _weekNum(b));
     if (!weeks.length) return;
 
-    let totL = 0, totO = 0;
     const data = {
       domain: d.domain,
       currentValue: 0,
@@ -406,14 +411,30 @@ function calculateLatenessData(sheetData, filters) {
       weeklyData: [],
       trend: []
     };
+
+    // Trend için TÜM haftalar
     weeks.forEach(w => {
       const ww = d.weekly[w];
       const val = ww.order > 0 ? (ww.late / ww.order) * 100 : 0;
-      totL += ww.late; totO += ww.order;
       data.weeklyData.push({ week: w, value: val });
       data.trend.push(val);
     });
-    data.currentValue = totO > 0 ? (totL / totO) * 100 : 0;
+
+    // currentValue: hafta filtresi varsa o hafta, yoksa tüm haftalar
+    if (filters.week && filters.week !== 'all') {
+      const targetWeek = d.weekly[filters.week];
+      data.currentValue = (targetWeek && targetWeek.order > 0)
+        ? (targetWeek.late / targetWeek.order) * 100
+        : 0;
+    } else {
+      let totL = 0, totO = 0;
+      weeks.forEach(w => {
+        totL += d.weekly[w].late;
+        totO += d.weekly[w].order;
+      });
+      data.currentValue = totO > 0 ? (totL / totO) * 100 : 0;
+    }
+
     out.push(data);
   });
   return out;
@@ -439,7 +460,6 @@ function calculateStockAccuracyData(sheetData, filters) {
     const weeks = Object.keys(d.weekly).filter(_isWeek27Plus).sort((a, b) => _weekNum(a) - _weekNum(b));
     if (!weeks.length) return;
 
-    let totA = 0, totB = 0;
     const data = {
       domain: d.domain,
       currentValue: 0,
@@ -447,14 +467,30 @@ function calculateStockAccuracyData(sheetData, filters) {
       weeklyData: [],
       trend: []
     };
+
+    // Trend için TÜM haftalar
     weeks.forEach(w => {
       const ww = d.weekly[w];
       const val = ww.A > 0 ? (ww.B / ww.A) * 100 : 0;
-      totA += ww.A; totB += ww.B;
       data.weeklyData.push({ week: w, value: val });
       data.trend.push(val);
     });
-    data.currentValue = totA > 0 ? (totB / totA) * 100 : 0;
+
+    // currentValue: hafta filtresi varsa o hafta, yoksa tüm haftalar
+    if (filters.week && filters.week !== 'all') {
+      const targetWeek = d.weekly[filters.week];
+      data.currentValue = (targetWeek && targetWeek.A > 0)
+        ? (targetWeek.B / targetWeek.A) * 100
+        : 0;
+    } else {
+      let totA = 0, totB = 0;
+      weeks.forEach(w => {
+        totA += d.weekly[w].A;
+        totB += d.weekly[w].B;
+      });
+      data.currentValue = totA > 0 ? (totB / totA) * 100 : 0;
+    }
+
     out.push(data);
   });
   return out;
@@ -480,7 +516,6 @@ function calculateThroughputData(sheetData, filters) {
     const weeks = Object.keys(d.weekly).filter(_isWeek27Plus).sort((a, b) => _weekNum(a) - _weekNum(b));
     if (!weeks.length) return;
 
-    let totO = 0, totH = 0;
     const data = {
       domain: d.domain,
       currentValue: 0,
@@ -488,14 +523,30 @@ function calculateThroughputData(sheetData, filters) {
       weeklyData: [],
       trend: []
     };
+
+    // Trend için TÜM haftalar
     weeks.forEach(w => {
       const ww = d.weekly[w];
       const val = ww.hrs > 0 ? (ww.orders / ww.hrs) : 0;
-      totO += ww.orders; totH += ww.hrs;
       data.weeklyData.push({ week: w, value: val });
       data.trend.push(val);
     });
-    data.currentValue = totH > 0 ? (totO / totH) : 0;
+
+    // currentValue: hafta filtresi varsa o hafta, yoksa tüm haftalar
+    if (filters.week && filters.week !== 'all') {
+      const targetWeek = d.weekly[filters.week];
+      data.currentValue = (targetWeek && targetWeek.hrs > 0)
+        ? (targetWeek.orders / targetWeek.hrs)
+        : 0;
+    } else {
+      let totO = 0, totH = 0;
+      weeks.forEach(w => {
+        totO += d.weekly[w].orders;
+        totH += d.weekly[w].hrs;
+      });
+      data.currentValue = totH > 0 ? (totO / totH) : 0;
+    }
+
     out.push(data);
   });
   return out;
@@ -521,7 +572,6 @@ function calculateMissedOrderData(sheetData, filters) {
     const weeks = Object.keys(d.weekly).filter(_isWeek31Plus).sort((a, b) => _weekNum(a) - _weekNum(b));
     if (!weeks.length) return;
 
-    let totD = 0, totM = 0;
     const data = {
       domain: d.domain,
       currentValue: 0,
@@ -529,16 +579,33 @@ function calculateMissedOrderData(sheetData, filters) {
       weeklyData: [],
       trend: []
     };
+
+    // Trend için TÜM haftalar
     weeks.forEach(w => {
       const ww = d.weekly[w];
       const total = ww.del + ww.miss;
       const val = total > 0 ? (ww.miss / total) * 100 : 0;
-      totD += ww.del; totM += ww.miss;
       data.weeklyData.push({ week: w, value: val });
       data.trend.push(val);
     });
-    const totalAll = totD + totM;
-    data.currentValue = totalAll > 0 ? (totM / totalAll) * 100 : 0;
+
+    // currentValue: hafta filtresi varsa o hafta, yoksa tüm haftalar
+    if (filters.week && filters.week !== 'all') {
+      const targetWeek = d.weekly[filters.week];
+      if (targetWeek) {
+        const total = targetWeek.del + targetWeek.miss;
+        data.currentValue = total > 0 ? (targetWeek.miss / total) * 100 : 0;
+      }
+    } else {
+      let totD = 0, totM = 0;
+      weeks.forEach(w => {
+        totD += d.weekly[w].del;
+        totM += d.weekly[w].miss;
+      });
+      const totalAll = totD + totM;
+      data.currentValue = totalAll > 0 ? (totM / totalAll) * 100 : 0;
+    }
+
     out.push(data);
   });
   return out;
@@ -564,7 +631,6 @@ function calculateProblematicOrderRatioData(sheetData, filters) {
     const weeks = Object.keys(d.weekly).filter(_isWeek27Plus).sort((a, b) => _weekNum(a) - _weekNum(b));
     if (!weeks.length) return;
 
-    let totO = 0, totFb = 0;
     const data = {
       domain: d.domain,
       currentValue: 0,
@@ -572,14 +638,30 @@ function calculateProblematicOrderRatioData(sheetData, filters) {
       weeklyData: [],
       trend: []
     };
+
+    // Trend için TÜM haftalar
     weeks.forEach(w => {
       const ww = d.weekly[w];
       const val = ww.orders > 0 ? (ww.fb / ww.orders) * 100 : 0;
-      totO += ww.orders; totFb += ww.fb;
       data.weeklyData.push({ week: w, value: val });
       data.trend.push(val);
     });
-    data.currentValue = totO > 0 ? (totFb / totO) * 100 : 0;
+
+    // currentValue: hafta filtresi varsa o hafta, yoksa tüm haftalar
+    if (filters.week && filters.week !== 'all') {
+      const targetWeek = d.weekly[filters.week];
+      data.currentValue = (targetWeek && targetWeek.orders > 0)
+        ? (targetWeek.fb / targetWeek.orders) * 100
+        : 0;
+    } else {
+      let totO = 0, totFb = 0;
+      weeks.forEach(w => {
+        totO += d.weekly[w].orders;
+        totFb += d.weekly[w].fb;
+      });
+      data.currentValue = totO > 0 ? (totFb / totO) * 100 : 0;
+    }
+
     out.push(data);
   });
   return out;
@@ -621,7 +703,7 @@ function calculatePalletBacklogOpsData(sheetData, filters) {
 
   const data = {
     domain: 'MultiTarget',
-    currentValue: totalShip > 0 ? (totalBack / totalShip) * 100 : 0,
+    currentValue: 0,
     targetValue: resolveTargetValue(
       domainForTarget,
       filters,
@@ -631,17 +713,29 @@ function calculatePalletBacklogOpsData(sheetData, filters) {
     trend: []
   };
 
-  Object.keys(weekly)
+  const weeks = Object.keys(weekly)
     .filter(_isWeek27Plus)
-    .sort((a, b) => _weekNum(a) - _weekNum(b))
-    .forEach(w => {
-      const ww = weekly[w];
-      if (ww.ship > 0) {
-        const val = (ww.back / ww.ship) * 100;
-        data.weeklyData.push({ week: w, value: val });
-        data.trend.push(val);
-      }
-    });
+    .sort((a, b) => _weekNum(a) - _weekNum(b));
+
+  // Trend için TÜM haftalar
+  weeks.forEach(w => {
+    const ww = weekly[w];
+    if (ww.ship > 0) {
+      const val = (ww.back / ww.ship) * 100;
+      data.weeklyData.push({ week: w, value: val });
+      data.trend.push(val);
+    }
+  });
+
+  // currentValue: hafta filtresi varsa o hafta, yoksa tüm haftalar
+  if (filters.week && filters.week !== 'all') {
+    const targetWeek = weekly[filters.week];
+    data.currentValue = (targetWeek && targetWeek.ship > 0)
+      ? (targetWeek.back / targetWeek.ship) * 100
+      : 0;
+  } else {
+    data.currentValue = totalShip > 0 ? (totalBack / totalShip) * 100 : 0;
+  }
 
   return (data.weeklyData.length || totalShip > 0) ? [data] : [];
 }
@@ -665,21 +759,36 @@ function calculateSatisfactionScoreData(sheetData, filters) {
     const weeks = Object.keys(res[dom]?.weekly || {}).filter(_isWeek27Plus).sort((a, b) => _weekNum(a) - _weekNum(b));
     if (!weeks.length) return;
 
-    let Tsum = 0, Tcnt = 0;
     const data = {
       domain: dom,
       currentValue: 0,
       targetValue: resolveTargetValue(dom, filters, "Increase Franchise Satisfaction Score"),
       weeklyData: [], trend: []
     };
+
+    // Trend için TÜM haftalar
     weeks.forEach(w => {
       const ww = res[dom].weekly[w];
       const val = ww.cnt ? (ww.sum / ww.cnt) : 0;
-      Tsum += ww.sum; Tcnt += ww.cnt;
       data.weeklyData.push({ week: w, value: val });
       data.trend.push(val);
     });
-    data.currentValue = Tcnt ? (Tsum / Tcnt) : 0;
+
+    // currentValue: hafta filtresi varsa o hafta, yoksa tüm haftalar
+    if (filters.week && filters.week !== 'all') {
+      const targetWeek = res[dom].weekly[filters.week];
+      data.currentValue = (targetWeek && targetWeek.cnt)
+        ? (targetWeek.sum / targetWeek.cnt)
+        : 0;
+    } else {
+      let Tsum = 0, Tcnt = 0;
+      weeks.forEach(w => {
+        Tsum += res[dom].weekly[w].sum;
+        Tcnt += res[dom].weekly[w].cnt;
+      });
+      data.currentValue = Tcnt ? (Tsum / Tcnt) : 0;
+    }
+
     out.push(data);
   });
 
@@ -706,21 +815,36 @@ function calculateFVCustomerComplaintData(sheetData, filters) {
     const weeks = Object.keys(d.weekly).filter(_isWeek27Plus).sort((a, b) => _weekNum(a) - _weekNum(b));
     if (!weeks.length) return;
 
-    let totO = 0, totFb = 0;
     const data = {
       domain: "GMore",
       currentValue: 0,
       targetValue: resolveTargetValue("GMore", filters, "Decrease GMore customer quality complaint rate (problematic order) F&V"),
       weeklyData: [], trend: []
     };
+
+    // Trend için TÜM haftalar
     weeks.forEach(w => {
       const ww = d.weekly[w];
       const val = ww.order > 0 ? (ww.fb / ww.order) * 100 : 0;
-      totO += ww.order; totFb += ww.fb;
       data.weeklyData.push({ week: w, value: val });
       data.trend.push(val);
     });
-    data.currentValue = totO > 0 ? (totFb / totO) * 100 : 0;
+
+    // currentValue: hafta filtresi varsa o hafta, yoksa tüm haftalar
+    if (filters.week && filters.week !== 'all') {
+      const targetWeek = d.weekly[filters.week];
+      data.currentValue = (targetWeek && targetWeek.order > 0)
+        ? (targetWeek.fb / targetWeek.order) * 100
+        : 0;
+    } else {
+      let totO = 0, totFb = 0;
+      weeks.forEach(w => {
+        totO += d.weekly[w].order;
+        totFb += d.weekly[w].fb;
+      });
+      data.currentValue = totO > 0 ? (totFb / totO) * 100 : 0;
+    }
+
     out.push(data);
   });
   return out;
@@ -749,7 +873,6 @@ function calculateGMoreFreshOrderData(sheetData, filters) {
     const weeks = Object.keys(d.weekly).filter(_isWeek27Plus).sort((a, b) => _weekNum(a) - _weekNum(b));
     if (!weeks.length) return;
 
-    let totO = 0, totF = 0;
     const data = {
       domain: d.domain,
       currentValue: 0,
@@ -757,16 +880,33 @@ function calculateGMoreFreshOrderData(sheetData, filters) {
       weeklyData: [],
       trend: []
     };
+
+    // Trend için TÜM haftalar
     weeks.forEach(w => {
       const ww = d.weekly[w];
       const total = ww.other + ww.fv;
       const val = total > 0 ? (ww.fv / total) * 100 : 0;
-      totO += ww.other; totF += ww.fv;
       data.weeklyData.push({ week: w, value: val });
       data.trend.push(val);
     });
-    const totalAll = totO + totF;
-    data.currentValue = totalAll > 0 ? (totF / totalAll) * 100 : 0;
+
+    // currentValue: hafta filtresi varsa o hafta, yoksa tüm haftalar
+    if (filters.week && filters.week !== 'all') {
+      const targetWeek = d.weekly[filters.week];
+      if (targetWeek) {
+        const total = targetWeek.other + targetWeek.fv;
+        data.currentValue = total > 0 ? (targetWeek.fv / total) * 100 : 0;
+      }
+    } else {
+      let totO = 0, totF = 0;
+      weeks.forEach(w => {
+        totO += d.weekly[w].other;
+        totF += d.weekly[w].fv;
+      });
+      const totalAll = totO + totF;
+      data.currentValue = totalAll > 0 ? (totF / totalAll) * 100 : 0;
+    }
+
     out.push(data);
   });
   return out;
@@ -799,7 +939,6 @@ function calculateNonAgreedShipmentData(sheetData, filters) {
       .sort((a, b) => _weekNum(a) - _weekNum(b));
     if (!weeks.length) return;
 
-    let totP = 0, totT = 0;
     const data = {
       domain: dom,
       currentValue: 0,
@@ -808,15 +947,29 @@ function calculateNonAgreedShipmentData(sheetData, filters) {
       trend: []
     };
 
+    // Trend için TÜM haftalar
     weeks.forEach(w => {
       const ww = res[dom].weekly[w];
       const val = ww.total > 0 ? (ww.prob / ww.total) * 100 : 0;
-      totP += ww.prob; totT += ww.total;
       data.weeklyData.push({ week: w, value: val });
       data.trend.push(val);
     });
 
-    data.currentValue = totT > 0 ? (totP / totT) * 100 : 0;
+    // currentValue: hafta filtresi varsa o hafta, yoksa tüm haftalar
+    if (filters.week && filters.week !== 'all') {
+      const targetWeek = res[dom].weekly[filters.week];
+      data.currentValue = (targetWeek && targetWeek.total > 0)
+        ? (targetWeek.prob / targetWeek.total) * 100
+        : 0;
+    } else {
+      let totP = 0, totT = 0;
+      weeks.forEach(w => {
+        totP += res[dom].weekly[w].prob;
+        totT += res[dom].weekly[w].total;
+      });
+      data.currentValue = totT > 0 ? (totP / totT) * 100 : 0;
+    }
+
     out.push(data);
   });
 
@@ -843,7 +996,6 @@ function calculateLMDVariableCostData(sheetData, filters) {
     const weeks = Object.keys(d.weekly).filter(_isWeek27Plus).sort((a, b) => _weekNum(a) - _weekNum(b));
     if (!weeks.length) return;
 
-    let totC = 0, totO = 0;
     const data = {
       domain: d.domain,
       currentValue: 0,
@@ -851,14 +1003,30 @@ function calculateLMDVariableCostData(sheetData, filters) {
       weeklyData: [],
       trend: []
     };
+
+    // Trend için TÜM haftalar
     weeks.forEach(w => {
       const ww = d.weekly[w];
       const val = ww.orders > 0 ? (ww.cost / ww.orders) : 0;
-      totC += ww.cost; totO += ww.orders;
       data.weeklyData.push({ week: w, value: val });
       data.trend.push(val);
     });
-    data.currentValue = totO > 0 ? (totC / totO) : 0;
+
+    // currentValue: hafta filtresi varsa o hafta, yoksa tüm haftalar
+    if (filters.week && filters.week !== 'all') {
+      const targetWeek = d.weekly[filters.week];
+      data.currentValue = (targetWeek && targetWeek.orders > 0)
+        ? (targetWeek.cost / targetWeek.orders)
+        : 0;
+    } else {
+      let totC = 0, totO = 0;
+      weeks.forEach(w => {
+        totC += d.weekly[w].cost;
+        totO += d.weekly[w].orders;
+      });
+      data.currentValue = totO > 0 ? (totC / totO) : 0;
+    }
+
     out.push(data);
   });
   return out;
@@ -1642,4 +1810,453 @@ function getDashboardSummary(filters = {}) {
   if (cnt) sum.avgProgress = tot / cnt;
   sum.atRisk = 0; // risk kaldırıldı
   return sum;
+}
+
+/* ==================== YÖNETİCİ PERFORMANS TABLOLARI ======================== */
+/**
+ * Her metrik için yöneticilerin (ops müdürü, saha yöneticisi) performansını hesaplar
+ * En kötüden iyiye sıralanmış halde döner
+ */
+function getManagerPerformance(filters = {}) {
+  try {
+    const managers = getWarehouseManagers();
+    const personTargets = getPersonTargets();
+
+    // Tüm yöneticileri topla
+    const opsManagers = new Set();
+    const sahaYoneticileri = new Set();
+
+    Object.values(managers).forEach(info => {
+      if (info.operasyonMuduru) opsManagers.add(info.operasyonMuduru);
+      if (info.sahaYoneticisi) sahaYoneticileri.add(info.sahaYoneticisi);
+    });
+
+    const result = {
+      operasyonMudurleri: [],
+      sahaYoneticileri: [],
+      metrics: OKR_METRICS.map(m => m.name)
+    };
+
+    // Her yönetici için performans hesapla
+    opsManagers.forEach(name => {
+      const perf = calculatePersonPerformance(name, 'operasyonMuduru', filters);
+      if (perf) result.operasyonMudurleri.push(perf);
+    });
+
+    sahaYoneticileri.forEach(name => {
+      const perf = calculatePersonPerformance(name, 'sahaYoneticisi', filters);
+      if (perf) result.sahaYoneticileri.push(perf);
+    });
+
+    return result;
+  } catch (e) {
+    console.error('getManagerPerformance error:', e);
+    return { operasyonMudurleri: [], sahaYoneticileri: [], metrics: [] };
+  }
+}
+
+function calculatePersonPerformance(personName, role, filters) {
+  try {
+    const personFilters = { ...filters };
+    if (role === 'operasyonMuduru') personFilters.operasyonMuduru = personName;
+    else if (role === 'sahaYoneticisi') personFilters.sahaYoneticisi = personName;
+
+    const data = getOKRData(personFilters);
+    const personTargets = getPersonTargets();
+    const normalizedName = _normName(personName);
+
+    const performance = {
+      name: personName,
+      role: role,
+      metrics: {},
+      overallProgress: 0,
+      hitCount: 0,
+      totalCount: 0
+    };
+
+    let totalProgress = 0;
+    let progressCount = 0;
+
+    data.forEach(metric => {
+      if (metric._isDummy) return;
+
+      const metricName = metric.name;
+      const isIncrease = (metricName || '').toLowerCase().includes('increase');
+      const unit = metric.unit || '';
+      const behavior = metric.behavior || null;
+
+      // MultiTarget metrikleri atla (depo bazlı değil)
+      if (["Achieve Waste + Waste A&M ratio target",
+           "Decrease the number of pending + rejected pallet backlog (Ops)"].includes(metricName)) {
+        return;
+      }
+
+      let currentValue = null;
+      let targetValue = null;
+      let progress = 0;
+      let hit = false;
+
+      // Domain bazlı verileri topla
+      metric.data.forEach(d => {
+        if (!d || d.targetValue == null) return;
+
+        // Kişi hedefi varsa onu kullan, yoksa domain hedefini kullan
+        const personTarget = personTargets[normalizedName]?.[metricName];
+        const target = personTarget != null ? personTarget : d.targetValue;
+
+        if (currentValue === null) {
+          currentValue = d.currentValue;
+          targetValue = target;
+        } else {
+          // Birden fazla domain varsa ortalamasını al
+          currentValue = (currentValue + d.currentValue) / 2;
+          targetValue = (targetValue + target) / 2;
+        }
+      });
+
+      if (currentValue !== null && targetValue !== null) {
+        progress = _computeProgressServer(isIncrease, unit, behavior, currentValue, targetValue);
+        hit = _hitServer(isIncrease, unit, behavior, currentValue, targetValue);
+
+        performance.metrics[metricName] = {
+          current: currentValue,
+          target: targetValue,
+          progress: progress,
+          hit: hit,
+          unit: unit
+        };
+
+        totalProgress += progress;
+        progressCount++;
+        performance.totalCount++;
+        if (hit) performance.hitCount++;
+      }
+    });
+
+    if (progressCount > 0) {
+      performance.overallProgress = totalProgress / progressCount;
+    }
+
+    return performance;
+  } catch (e) {
+    console.error('calculatePersonPerformance error:', personName, e);
+    return null;
+  }
+}
+
+/* ==================== AKSİYON PLANI SİSTEMİ ================================ */
+/**
+ * Metrik bazında en kötü N depoyu döner (G10 ve GMore için ayrı)
+ */
+function getBottom10Warehouses(metricName, domain, filters = {}, limit = 10) {
+  try {
+    const allWarehouses = getUnderperformingWarehouses(metricName, domain, filters);
+    // Zaten en kötüden iyiye sıralı geliyor, sadece ilk N'i al
+    return allWarehouses.slice(0, limit);
+  } catch (e) {
+    console.error('getBottom10Warehouses error:', e);
+    return [];
+  }
+}
+
+/**
+ * Aksiyon planını Google Sheets'e kaydeder
+ */
+function saveActionPlan(metricName, domain, warehouse, actionPlan, week) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName('Action Plans');
+
+    // Sheet yoksa oluştur
+    if (!sheet) {
+      sheet = ss.insertSheet('Action Plans');
+      // Başlık satırı
+      sheet.getRange(1, 1, 1, 6).setValues([[
+        'Tarih', 'Hafta', 'Metrik', 'Domain', 'Depo', 'Aksiyon Planı'
+      ]]);
+      sheet.getRange(1, 1, 1, 6).setFontWeight('bold');
+      sheet.getRange(1, 1, 1, 6).setBackground('#5D3EBC');
+      sheet.getRange(1, 1, 1, 6).setFontColor('#FFFFFF');
+      sheet.setFrozenRows(1);
+    }
+
+    // Yeni kayıt ekle
+    const timestamp = new Date();
+    const newRow = [
+      timestamp,
+      week || _isoWeekLabel(timestamp),
+      metricName,
+      domain,
+      warehouse,
+      actionPlan
+    ];
+
+    sheet.appendRow(newRow);
+
+    // Son satırı formatla
+    const lastRow = sheet.getLastRow();
+    sheet.getRange(lastRow, 1).setNumberFormat('dd.mm.yyyy hh:mm:ss');
+
+    return { success: true, message: 'Aksiyon planı kaydedildi' };
+  } catch (e) {
+    console.error('saveActionPlan error:', e);
+    return { success: false, message: 'Hata: ' + e.message };
+  }
+}
+
+/**
+ * Belirli bir depo için geçmiş aksiyon planlarını getirir
+ */
+function getActionPlans(metricName, domain, warehouse, weeks = 4) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName('Action Plans');
+
+    if (!sheet) return [];
+
+    const data = sheet.getDataRange().getValues();
+    if (data.length <= 1) return []; // Sadece başlık varsa
+
+    const plans = [];
+
+    // Başlık satırını atla (index 0)
+    for (let i = data.length - 1; i >= 1; i--) { // Sondan başa doğru (en yeni üstte)
+      const row = data[i];
+      const [date, week, metric, dom, wh, plan] = row;
+
+      if (metric === metricName && dom === domain && wh === warehouse) {
+        plans.push({
+          date: date,
+          week: week,
+          plan: plan
+        });
+
+        if (plans.length >= weeks) break;
+      }
+    }
+
+    return plans;
+  } catch (e) {
+    console.error('getActionPlans error:', e);
+    return [];
+  }
+}
+
+/* ==================== KRONİK DEPO ANALİZİ ================================== */
+/**
+ * Haftalık bazda depoların performansını analiz eder
+ * Kronik olarak hedef altında kalanları, iyileşenleri, kötüleşenleri tespit eder
+ */
+function getChronicWarehouseAnalysis(domain = 'all', minWeeks = 4) {
+  try {
+    const result = {
+      chronic: [],      // Kronik olarak hedef altında kalanlar
+      improving: [],    // İyileşme gösterenler
+      declining: [],    // Kötüleşenler
+      stats: {}
+    };
+
+    const domains = domain === 'all' ? ['G10', 'GMore'] : [domain];
+
+    domains.forEach(dom => {
+      const analysis = analyzeWarehousesByDomain(dom, minWeeks);
+      result.chronic = result.chronic.concat(analysis.chronic);
+      result.improving = result.improving.concat(analysis.improving);
+      result.declining = result.declining.concat(analysis.declining);
+      result.stats[dom] = analysis.stats;
+    });
+
+    return result;
+  } catch (e) {
+    console.error('getChronicWarehouseAnalysis error:', e);
+    return { chronic: [], improving: [], declining: [], stats: {} };
+  }
+}
+
+function analyzeWarehousesByDomain(domain, minWeeks) {
+  const warehouses = {};
+  const chronic = [];
+  const improving = [];
+  const declining = [];
+
+  // Her metrik için depo performanslarını topla
+  OKR_METRICS.forEach(metric => {
+    // MultiTarget metrikleri atla
+    if (["Achieve Waste + Waste A&M ratio target",
+         "Decrease the number of pending + rejected pallet backlog (Ops)"].includes(metric.name)) {
+      return;
+    }
+
+    const sd = getSheetData(metric.name);
+    if (!sd || !sd.length) return;
+
+    const isIncrease = (metric.name || '').toLowerCase().includes('increase');
+    const target = metric.target[domain];
+    if (target == null) return;
+
+    // Haftalık depo performanslarını topla
+    const warehouseWeekly = {};
+
+    sd.forEach(row => {
+      const wh = String(row[0] || '').trim();
+      const dom = _normDomain(row[1]);
+      const week = String(row[2] || '').trim();
+
+      if (dom !== domain || !wh || !week) return;
+      if (!_isWeek27Plus(week)) return;
+
+      if (!warehouseWeekly[wh]) warehouseWeekly[wh] = {};
+      if (!warehouseWeekly[wh][week]) warehouseWeekly[wh][week] = { metricsMet: 0, metricsTotal: 0 };
+
+      // Metrik değerini hesapla ve hedefe ulaşıp ulaşmadığını kontrol et
+      const value = calculateWarehouseMetricValue(metric, row);
+      if (value !== null) {
+        const hit = checkMetricHit(value, target, isIncrease);
+        warehouseWeekly[wh][week].metricsTotal++;
+        if (hit) warehouseWeekly[wh][week].metricsMet++;
+      }
+    });
+
+    // Her depo için analiz yap
+    Object.keys(warehouseWeekly).forEach(wh => {
+      if (!warehouses[wh]) {
+        warehouses[wh] = {
+          warehouse: wh,
+          domain: domain,
+          weeksBelowTarget: 0,
+          totalWeeks: 0,
+          trend: [],
+          recentPerformance: 0
+        };
+      }
+
+      const weeks = Object.keys(warehouseWeekly[wh]).sort((a, b) => _weekNum(a) - _weekNum(b));
+
+      weeks.forEach(week => {
+        const weekData = warehouseWeekly[wh][week];
+        const successRate = weekData.metricsTotal > 0 ? (weekData.metricsMet / weekData.metricsTotal) * 100 : 0;
+
+        warehouses[wh].totalWeeks++;
+        warehouses[wh].trend.push(successRate);
+
+        if (successRate < 50) { // %50'nin altındaysa hedef altı sayılır
+          warehouses[wh].weeksBelowTarget++;
+        }
+      });
+
+      // Son 3 haftanın ortalaması
+      const recentTrend = warehouses[wh].trend.slice(-3);
+      warehouses[wh].recentPerformance = recentTrend.length > 0
+        ? recentTrend.reduce((a, b) => a + b, 0) / recentTrend.length
+        : 0;
+    });
+  });
+
+  // Sınıflandırma
+  Object.values(warehouses).forEach(wh => {
+    if (wh.totalWeeks < minWeeks) return; // Yeterli veri yok
+
+    const chronicRatio = wh.weeksBelowTarget / wh.totalWeeks;
+
+    // Kronik (toplam haftaların %60'ından fazlası hedef altında)
+    if (chronicRatio >= 0.6) {
+      chronic.push({
+        ...wh,
+        chronicRatio: chronicRatio * 100,
+        avgPerformance: wh.trend.reduce((a, b) => a + b, 0) / wh.trend.length
+      });
+    }
+
+    // Trend analizi (son 3 hafta vs önceki 3 hafta)
+    if (wh.trend.length >= 6) {
+      const oldAvg = wh.trend.slice(-6, -3).reduce((a, b) => a + b, 0) / 3;
+      const newAvg = wh.trend.slice(-3).reduce((a, b) => a + b, 0) / 3;
+      const change = newAvg - oldAvg;
+
+      if (change > 10) { // %10'dan fazla iyileşme
+        improving.push({
+          ...wh,
+          improvement: change,
+          oldPerformance: oldAvg,
+          newPerformance: newAvg
+        });
+      } else if (change < -10) { // %10'dan fazla kötüleşme
+        declining.push({
+          ...wh,
+          decline: Math.abs(change),
+          oldPerformance: oldAvg,
+          newPerformance: newAvg
+        });
+      }
+    }
+  });
+
+  // Sıralama: Kötüden iyiye
+  chronic.sort((a, b) => a.avgPerformance - b.avgPerformance);
+  improving.sort((a, b) => b.improvement - a.improvement);
+  declining.sort((a, b) => b.decline - a.decline);
+
+  const stats = {
+    totalWarehouses: Object.keys(warehouses).length,
+    chronicCount: chronic.length,
+    improvingCount: improving.length,
+    decliningCount: declining.length
+  };
+
+  return { chronic, improving, declining, stats };
+}
+
+function calculateWarehouseMetricValue(metric, row) {
+  // Metrik tipine göre değer hesapla
+  const metricName = metric.name;
+
+  if (metricName === "Decrease number of WHs with availability below 85%") {
+    const avail = +row[3] || 0;
+    const total = +row[4] || 0;
+    return total > 0 ? (avail / total) * 100 : null;
+  } else if (metricName === "Decrease lateness percent") {
+    const late = +row[3] || 0;
+    const order = +row[4] || 0;
+    return order > 0 ? (late / order) * 100 : null;
+  } else if (metricName === "Increase stock accuracy in dark stores") {
+    const A = +row[3] || 0;
+    const B = +row[4] || 0;
+    return A > 0 ? (B / A) * 100 : null;
+  } else if (metricName === "Increase throughput for G10 and GMore") {
+    const orders = +row[3] || 0;
+    const hrs = +row[4] || 0;
+    return hrs > 0 ? orders / hrs : null;
+  } else if (metricName === "Decrease missed order ratio") {
+    const del = +row[3] || 0;
+    const miss = +row[4] || 0;
+    const total = del + miss;
+    return total > 0 ? (miss / total) * 100 : null;
+  } else if (metricName === "Decrease the problematic order ratio (G10 and GMore)") {
+    const orders = +row[3] || 0;
+    const fb = +row[4] || 0;
+    return orders > 0 ? (fb / orders) * 100 : null;
+  } else if (metricName === "Increase Franchise Satisfaction Score") {
+    return _toNum(row[3]);
+  } else if (metricName === "Increase GMore fresh order penetration") {
+    const other = +row[3] || 0;
+    const fv = +row[4] || 0;
+    const total = other + fv;
+    return total > 0 ? (fv / total) * 100 : null;
+  } else if (metricName === "Decrease GMore customer quality complaint rate (problematic order) F&V") {
+    const orders = +row[3] || 0;
+    const fb = +row[4] || 0;
+    return orders > 0 ? (fb / orders) * 100 : null;
+  } else if (metricName === "Achieve LMD variable cost per order target for G10 and GMore (Courier + Fleet)") {
+    const courier = +row[3] || 0;
+    const fleet = +row[4] || 0;
+    const orders = +row[5] || 0;
+    return orders > 0 ? (courier + fleet) / orders : null;
+  }
+
+  return null;
+}
+
+function checkMetricHit(value, target, isIncrease) {
+  if (value == null || target == null) return false;
+  return isIncrease ? (value >= target) : (value <= target);
 }

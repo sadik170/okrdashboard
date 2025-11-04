@@ -41,7 +41,15 @@ function doGet() {
 function include(filename) { return HtmlService.createHtmlOutputFromFile(filename).getContent(); }
 
 /* ---------- Sheet okuma ---------- */
+// Global cache for sheet data (to optimize performance tables calculation)
+let sheetDataCache = {};
+
 function getSheetData(sheetName) {
+  // Check cache first
+  if (sheetDataCache[sheetName]) {
+    return sheetDataCache[sheetName];
+  }
+
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     let sheet = ss.getSheetByName(sheetName);
@@ -54,11 +62,20 @@ function getSheetData(sheetName) {
     }
     if (!sheet) return null;
     const data = sheet.getDataRange().getValues();
-    return data.length > 1 ? data.slice(1) : null;
+    const result = data.length > 1 ? data.slice(1) : null;
+
+    // Cache the result
+    sheetDataCache[sheetName] = result;
+    return result;
   } catch (e) {
     console.error('getSheetData error:', sheetName, e);
     return null;
   }
+}
+
+// Function to clear sheet cache (call this when data changes)
+function clearSheetCache() {
+  sheetDataCache = {};
 }
 
 /* ---------- Domain normalize ---------- */
@@ -304,6 +321,11 @@ function getWarehousesByFilter(filters) {
     if (filters?.warehouse && filters.warehouse !== 'all' && filters.warehouse !== wh) return;
     filtered.add(wh);
   });
+
+  // Debug log for performance tables
+  if (filters?.sahaYoneticisi && filters.sahaYoneticisi !== 'all') {
+    console.log('Warehouses found for', filters.sahaYoneticisi, ':', filtered.size);
+  }
 
   return filtered;
 }
@@ -1869,22 +1891,30 @@ function getManagerPerformance(filters = {}) {
       metrics: OKR_METRICS.map(m => m.name)
     };
 
-    // Her yönetici için performans hesapla
+    // OPTIMIZATION: Clear and warm up cache for faster repeated queries
+    console.log('Warming up sheet cache...');
+    clearSheetCache();
+
+    // Her yönetici için performans hesapla (cache sayesinde hızlı)
+    let opsCount = 0;
     opsManagers.forEach(name => {
       const perf = calculatePersonPerformance(name, 'operasyonMuduru', filters);
       if (perf) {
-        console.log('Ops Manager performance calculated:', name);
         result.operasyonMudurleri.push(perf);
+        opsCount++;
       }
     });
+    console.log('Ops managers calculated:', opsCount);
 
+    let sahaCount = 0;
     sahaYoneticileri.forEach(name => {
       const perf = calculatePersonPerformance(name, 'sahaYoneticisi', filters);
       if (perf) {
-        console.log('Saha Yoneticisi performance calculated:', name);
         result.sahaYoneticileri.push(perf);
+        sahaCount++;
       }
     });
+    console.log('Saha yoneticileri calculated:', sahaCount);
 
     console.log('Final result - Ops:', result.operasyonMudurleri.length, 'Saha:', result.sahaYoneticileri.length);
     return result;
@@ -1901,6 +1931,12 @@ function calculatePersonPerformance(personName, role, filters) {
     else if (role === 'sahaYoneticisi') personFilters.sahaYoneticisi = personName;
 
     const data = getOKRData(personFilters);
+
+    if (!data || data.length === 0) {
+      console.log('No OKR data returned for:', personName, 'role:', role);
+      return null;
+    }
+
     const personTargets = getPersonTargets();
     const normalizedName = _normName(personName);
 
@@ -2093,7 +2129,7 @@ function getActionPlans(metricName, domain, warehouse, weeks = 4) {
       if (rowMetric === normalizedMetric && rowDomain === normalizedDomain && rowWarehouse === normalizedWarehouse) {
         console.log('Match found at row', i);
         plans.push({
-          date: date,
+          date: date ? Utilities.formatDate(new Date(date), Session.getScriptTimeZone(), 'dd.MM.yyyy HH:mm') : '',
           week: week || '',
           plan: plan || ''
         });

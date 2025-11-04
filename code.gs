@@ -321,18 +321,32 @@ function getWarehousesByFilter(filters) {
   const managers = getWarehouseManagers();
   const filtered = new Set();
 
+  // Normalize filter names for comparison
+  const normSahaYoneticisi = filters?.sahaYoneticisi && filters.sahaYoneticisi !== 'all'
+    ? _normName(filters.sahaYoneticisi) : null;
+  const normOpsManager = filters?.operasyonMuduru && filters.operasyonMuduru !== 'all'
+    ? _normName(filters.operasyonMuduru) : null;
+  const normBolgeMuduru = filters?.bolgeMuduru && filters.bolgeMuduru !== 'all'
+    ? _normName(filters.bolgeMuduru) : null;
+
   Object.entries(managers).forEach(([wh, info]) => {
     if (filters?.domain && filters.domain !== 'all' && info.domain !== filters.domain) return;
-    if (filters?.sahaYoneticisi && filters.sahaYoneticisi !== 'all' && info.sahaYoneticisi !== filters.sahaYoneticisi) return;
-    if (filters?.operasyonMuduru && filters.operasyonMuduru !== 'all' && info.operasyonMuduru !== filters.operasyonMuduru) return;
-    if (filters?.bolgeMuduru && filters.bolgeMuduru !== 'all' && info.bolgeMuduru !== filters.bolgeMuduru) return;
+
+    // Use normalized names for comparison
+    if (normSahaYoneticisi && _normName(info.sahaYoneticisi) !== normSahaYoneticisi) return;
+    if (normOpsManager && _normName(info.operasyonMuduru) !== normOpsManager) return;
+    if (normBolgeMuduru && _normName(info.bolgeMuduru) !== normBolgeMuduru) return;
+
     if (filters?.warehouse && filters.warehouse !== 'all' && filters.warehouse !== wh) return;
     filtered.add(wh);
   });
 
   // Debug log for performance tables
-  if (filters?.sahaYoneticisi && filters.sahaYoneticisi !== 'all') {
-    console.log('Warehouses found for', filters.sahaYoneticisi, ':', filtered.size);
+  if (normSahaYoneticisi) {
+    console.log('Warehouses found for', filters.sahaYoneticisi, '(normalized:', normSahaYoneticisi, '):', filtered.size);
+  }
+  if (normOpsManager) {
+    console.log('Warehouses found for', filters.operasyonMuduru, '(normalized:', normOpsManager, '):', filtered.size);
   }
 
   return filtered;

@@ -856,7 +856,14 @@ function renderActionPlanList(){
                     class="w-full px-4 py-3 glass-morphism border border-white/20 rounded-xl text-white focus:ring-2 focus:ring-getir-purple resize-none"
                     rows="3"
                     placeholder="Bu depo için alınacak aksiyonları yazın..."></textarea>
-          <button class="mt-2 px-4 py-2 bg-gradient-to-r from-getir-yellow to-yellow-300 text-getir-purple font-semibold rounded-xl hover:shadow-lg transition"
+
+          <div class="mt-3">
+            <label class="block text-sm font-medium text-white/80 mb-2">Termin Süresi:</label>
+            <input type="date" id="deadline_${wh.warehouse.replace(/\s/g, '_')}"
+                   class="px-4 py-2 glass-morphism border border-white/20 rounded-xl text-white focus:ring-2 focus:ring-getir-purple">
+          </div>
+
+          <button class="mt-3 px-4 py-2 bg-gradient-to-r from-getir-yellow to-yellow-300 text-getir-purple font-semibold rounded-xl hover:shadow-lg transition"
                   onclick="saveWarehouseActionPlan('${wh.warehouse}')">
             💾 Kaydet
           </button>
@@ -906,6 +913,7 @@ function loadPastActions(warehouse){
       plans.forEach(p => {
         console.log('FRONTEND: Processing plan:', p);
         const dateStr = p.date || '-';
+        const deadlineStr = p.deadline || '';
         html += `
           <div class="bg-white/5 p-3 rounded-lg">
             <div class="flex justify-between text-xs text-white/60 mb-1">
@@ -913,6 +921,7 @@ function loadPastActions(warehouse){
               <span>${p.week || '-'}</span>
             </div>
             <p class="text-sm text-white/80">${p.plan || '-'}</p>
+            ${deadlineStr ? `<div class="mt-2 text-xs text-yellow-400">⏰ Termin: ${deadlineStr}</div>` : ''}
           </div>`;
       });
       html += '</div>';
@@ -927,8 +936,11 @@ function loadPastActions(warehouse){
 
 function saveWarehouseActionPlan(warehouse){
   const {metricName, domain} = actionPlanData;
-  const id = 'actionPlan_' + warehouse.replace(/\s/g, '_');
-  const textarea = document.getElementById(id);
+  const planId = 'actionPlan_' + warehouse.replace(/\s/g, '_');
+  const deadlineId = 'deadline_' + warehouse.replace(/\s/g, '_');
+
+  const textarea = document.getElementById(planId);
+  const deadlineInput = document.getElementById(deadlineId);
 
   if (!textarea) return;
 
@@ -938,11 +950,14 @@ function saveWarehouseActionPlan(warehouse){
     return;
   }
 
+  const deadline = deadlineInput ? deadlineInput.value : null;
+
   google.script.run
     .withSuccessHandler((result)=>{
       if (result && result.success) {
         showSuccessMessage('Aksiyon planı kaydedildi!');
         textarea.value = '';
+        if (deadlineInput) deadlineInput.value = '';
         loadPastActions(warehouse); // Listeyi güncelle
       } else {
         showErrorMessage(result.message || 'Kayıt başarısız.');
@@ -951,7 +966,7 @@ function saveWarehouseActionPlan(warehouse){
     .withFailureHandler(()=>{
       showErrorMessage('Kayıt sırasında hata oluştu.');
     })
-    .saveActionPlan(metricName, domain, warehouse, plan, null);
+    .saveActionPlan(metricName, domain, warehouse, plan, null, deadline);
 }
 
 // [NEW] Excel (CSV) export - Türkiye locale'ine uygun format

@@ -362,7 +362,7 @@ function applyManagerFilters(warehouse, domain, filters) {
 function calculateWHBelow85Data(sheetData, filters) {
   const res = {};
   sheetData.forEach(r => {
-    const wh = r[0], dom = _normDomain(r[1]), week = r[2], avail = r[3], total = r[4];
+    const wh = r[0], dom = _normDomain(r[1]), week = _normWeek(r[2]), avail = r[3], total = r[4];
     if (!applyManagerFilters(wh, dom, filters)) return;
     if (dom !== 'G10' && dom !== 'GMore') return;
     if (!_isWeek27Plus(week)) return;
@@ -418,7 +418,7 @@ function calculateWHBelow85Data(sheetData, filters) {
 function calculateLatenessData(sheetData, filters) {
   const res = {};
   sheetData.forEach(r => {
-    const wh = r[0], dom = _normDomain(r[1]), week = r[2], late = +r[3] || 0, order = +r[4] || 0;
+    const wh = r[0], dom = _normDomain(r[1]), week = _normWeek(r[2]), late = +r[3] || 0, order = +r[4] || 0;
     if (!applyManagerFilters(wh, dom, filters)) return;
     if (dom !== 'G10' && dom !== 'GMore') return;
     if (!_isWeek31Plus(week)) return;
@@ -474,7 +474,7 @@ function calculateLatenessData(sheetData, filters) {
 function calculateStockAccuracyData(sheetData, filters) {
   const res = {};
   sheetData.forEach(r => {
-    const wh = r[0], dom = _normDomain(r[1]), week = r[2], A = +r[3] || 0, B = +r[4] || 0;
+    const wh = r[0], dom = _normDomain(r[1]), week = _normWeek(r[2]), A = +r[3] || 0, B = +r[4] || 0;
     if (!applyManagerFilters(wh, dom, filters)) return;
     if (dom !== 'G10' && dom !== 'GMore') return;
     if (!_isWeek27Plus(week)) return;
@@ -530,7 +530,7 @@ function calculateStockAccuracyData(sheetData, filters) {
 function calculateThroughputData(sheetData, filters) {
   const res = {};
   sheetData.forEach(r => {
-    const wh = r[0], dom = _normDomain(r[1]), week = r[2], orders = +r[3] || 0, hrs = +r[4] || 0;
+    const wh = r[0], dom = _normDomain(r[1]), week = _normWeek(r[2]), orders = +r[3] || 0, hrs = +r[4] || 0;
     if (!applyManagerFilters(wh, dom, filters)) return;
     if (dom !== 'G10' && dom !== 'GMore') return;
     if (!_isWeek27Plus(week)) return;
@@ -586,7 +586,7 @@ function calculateThroughputData(sheetData, filters) {
 function calculateMissedOrderData(sheetData, filters) {
   const res = {};
   sheetData.forEach(r => {
-    const wh = r[0], dom = _normDomain(r[1]), week = r[2], delivered = +r[3] || 0, missed = +r[4] || 0;
+    const wh = r[0], dom = _normDomain(r[1]), week = _normWeek(r[2]), delivered = +r[3] || 0, missed = +r[4] || 0;
     if (!applyManagerFilters(wh, dom, filters)) return;
     if (dom !== 'G10' && dom !== 'GMore') return;
     if (!_isWeek31Plus(week)) return;
@@ -645,7 +645,7 @@ function calculateMissedOrderData(sheetData, filters) {
 function calculateProblematicOrderRatioData(sheetData, filters) {
   const res = {};
   sheetData.forEach(r => {
-    const wh = r[0], dom = _normDomain(r[1]), week = r[2], orders = +r[3] || 0, fb = +r[4] || 0;
+    const wh = r[0], dom = _normDomain(r[1]), week = _normWeek(r[2]), orders = +r[3] || 0, fb = +r[4] || 0;
     if (!applyManagerFilters(wh, dom, filters)) return;
     if (dom !== 'G10' && dom !== 'GMore') return;
     if (!_isWeek27Plus(week)) return;
@@ -773,7 +773,7 @@ function calculatePalletBacklogOpsData(sheetData, filters) {
 function calculateSatisfactionScoreData(sheetData, filters) {
   const res = {};
   sheetData.forEach(r => {
-    const wh = r[0], dom = _normDomain(r[1]), week = r[2], score = _toNum(r[3]) ?? 0;
+    const wh = r[0], dom = _normDomain(r[1]), week = _normWeek(r[2]), score = _toNum(r[3]) ?? 0;
     if (!applyManagerFilters(wh, dom, filters)) return;
     if (dom !== 'G10' && dom !== 'GMore') return;
     if (!_isWeek27Plus(week)) return;
@@ -829,7 +829,7 @@ function calculateSatisfactionScoreData(sheetData, filters) {
 function calculateFVCustomerComplaintData(sheetData, filters) {
   const res = {};
   sheetData.forEach(r => {
-    const wh = r[0], dom = _normDomain(r[1]), week = r[2], order = +r[3] || 0, fb = +r[4] || 0;
+    const wh = r[0], dom = _normDomain(r[1]), week = _normWeek(r[2]), order = +r[3] || 0, fb = +r[4] || 0;
     if (dom !== 'GMore') return;
     if (!applyManagerFilters(wh, dom, filters)) return;
     if (!_isWeek27Plus(week)) return;
@@ -885,7 +885,7 @@ function calculateFVCustomerComplaintData(sheetData, filters) {
 function calculateGMoreFreshOrderData(sheetData, filters) {
   const res = {};
   sheetData.forEach(r => {
-    const wh = r[0], dom = _normDomain(r[1]), week = r[2];
+    const wh = r[0], dom = _normDomain(r[1]), week = _normWeek(r[2]);
     const other = +r[3] || 0, fv = +r[4] || 0;
 
     if (dom !== 'GMore') return;
@@ -947,7 +947,7 @@ function calculateNonAgreedShipmentData(sheetData, filters) {
   const res = { G10: { weekly: {} }, GMore: { weekly: {} } };
 
   sheetData.forEach(r => {
-    const week = r[0];                               // A: Week (sayı ya da "W27")
+    const week = _normWeek(r[0]);                    // A: Week (sayı ya da "W27") - normalize edildi
     const wh = String(r[1] || '').trim();          // B: Warehouse Name
     const dom = _normDomain(r[2]);                  // C: Domain  (Getir10 / Getir More)
     const prob = _toNum(r[3]) || 0;                  // D: Mutabakatsızlık Tutar
@@ -1009,7 +1009,7 @@ function calculateNonAgreedShipmentData(sheetData, filters) {
 function calculateLMDVariableCostData(sheetData, filters) {
   const res = {};
   sheetData.forEach(r => {
-    const wh = r[0], dom = _normDomain(r[1]), week = r[2];
+    const wh = r[0], dom = _normDomain(r[1]), week = _normWeek(r[2]);
     const courier = +r[3] || 0, fleet = +r[4] || 0, orders = +r[5] || 0;
     if (!applyManagerFilters(wh, dom, filters)) return;
     if (dom !== 'G10' && dom !== 'GMore') return;
@@ -1153,7 +1153,7 @@ function getUnderperformingWarehouses(metricName, domain, filters) {
     sd.forEach(r => {
       const wh = String(r[0] || '').trim();
       const d = _normDomain(r[1]);
-      const w = String(r[2] || '').trim();
+      const w = _normWeek(r[2]);
       if (d !== dom) return;
       if (!applyManagerFilters(wh, d, filters)) return;
       if (!_isWeek27Plus(w)) return;
@@ -1168,7 +1168,7 @@ function getUnderperformingWarehouses(metricName, domain, filters) {
     sd.forEach(r => {
       const wh = String(r[0] || '').trim();
       const d = _normDomain(r[1]);
-      const w = String(r[2] || '').trim();
+      const w = _normWeek(r[2]);
       const avail = +r[3] || 0, total = +r[4] || 0;
       if (d !== dom) return;
       if (!applyManagerFilters(wh, d, filters)) return;
@@ -1199,7 +1199,7 @@ function getUnderperformingWarehouses(metricName, domain, filters) {
 
   if (metricName === "Decrease lateness percent") {
     sd.forEach(r => {
-      const wh = String(r[0] || '').trim(), d = _normDomain(r[1]), w = String(r[2] || '').trim();
+      const wh = String(r[0] || '').trim(), d = _normDomain(r[1]), w = _normWeek(r[2]);
       const late = +r[3] || 0, ord = +r[4] || 0;
       if (d !== dom) return; if (!applyManagerFilters(wh, d, filters)) return;
       if (useW31 ? !_isWeek31Plus(w) : !_isWeek27Plus(w)) return;
@@ -1209,7 +1209,7 @@ function getUnderperformingWarehouses(metricName, domain, filters) {
     });
   } else if (metricName === "Increase stock accuracy in dark stores") {
     sd.forEach(r => {
-      const wh = String(r[0] || '').trim(), d = _normDomain(r[1]), w = String(r[2] || '').trim();
+      const wh = String(r[0] || '').trim(), d = _normDomain(r[1]), w = _normWeek(r[2]);
       const A = +r[3] || 0, B = +r[4] || 0;
       if (d !== dom) return; if (!applyManagerFilters(wh, d, filters)) return;
       if (!_isWeek27Plus(w)) return;
@@ -1218,7 +1218,7 @@ function getUnderperformingWarehouses(metricName, domain, filters) {
     });
   } else if (metricName === "Increase throughput for G10 and GMore") {
     sd.forEach(r => {
-      const wh = String(r[0] || '').trim(), d = _normDomain(r[1]), w = String(r[2] || '').trim();
+      const wh = String(r[0] || '').trim(), d = _normDomain(r[1]), w = _normWeek(r[2]);
       const orders = +r[3] || 0, hrs = +r[4] || 0;
       if (d !== dom) return; if (!applyManagerFilters(wh, d, filters)) return;
       if (!_isWeek27Plus(w)) return;
@@ -1227,7 +1227,7 @@ function getUnderperformingWarehouses(metricName, domain, filters) {
     });
   } else if (metricName === "Decrease missed order ratio") {
     sd.forEach(r => {
-      const wh = String(r[0] || '').trim(), d = _normDomain(r[1]), w = String(r[2] || '').trim();
+      const wh = String(r[0] || '').trim(), d = _normDomain(r[1]), w = _normWeek(r[2]);
       const del = +r[3] || 0, miss = +r[4] || 0;
       if (d !== dom) return; if (!applyManagerFilters(wh, d, filters)) return;
       if (useW31 ? !_isWeek31Plus(w) : !_isWeek27Plus(w)) return;
@@ -1236,7 +1236,7 @@ function getUnderperformingWarehouses(metricName, domain, filters) {
     });
   } else if (metricName === "Decrease the problematic order ratio (G10 and GMore)") {
     sd.forEach(r => {
-      const wh = String(r[0] || '').trim(), d = _normDomain(r[1]), w = String(r[2] || '').trim();
+      const wh = String(r[0] || '').trim(), d = _normDomain(r[1]), w = _normWeek(r[2]);
       const ord = +r[3] || 0, fb = +r[4] || 0;
       if (d !== dom) return; if (!applyManagerFilters(wh, d, filters)) return;
       if (!_isWeek27Plus(w)) return;
@@ -1245,7 +1245,7 @@ function getUnderperformingWarehouses(metricName, domain, filters) {
     });
   } else if (metricName === "Decrease non-agreed / problematic shipment ratios") {
     sd.forEach(r => {
-      const w = String(r[0] || '').trim(), wh = String(r[1] || '').trim(), d = _normDomain(r[2]);
+      const w = _normWeek(r[0]), wh = String(r[1] || '').trim(), d = _normDomain(r[2]);
       const prob = _toNum(r[3]) || 0, total = _toNum(r[4]) || 0;
       if (d !== dom) return; if (!applyManagerFilters(wh, d, filters)) return;
       if (!_isWeek27Plus(w)) return;
@@ -1254,7 +1254,7 @@ function getUnderperformingWarehouses(metricName, domain, filters) {
     });
   } else if (metricName === "Achieve LMD variable cost per order target for G10 and GMore (Courier + Fleet)") {
     sd.forEach(r => {
-      const wh = String(r[0] || '').trim(), d = _normDomain(r[1]), w = String(r[2] || '').trim();
+      const wh = String(r[0] || '').trim(), d = _normDomain(r[1]), w = _normWeek(r[2]);
       const courier = +r[3] || 0, fleet = +r[4] || 0, ord = +r[5] || 0;
       if (d !== dom) return; if (!applyManagerFilters(wh, d, filters)) return;
       if (!_isWeek27Plus(w)) return;
@@ -1263,7 +1263,7 @@ function getUnderperformingWarehouses(metricName, domain, filters) {
     });
   } else if (metricName === "Increase Franchise Satisfaction Score") {
     sd.forEach(r => {
-      const wh = String(r[0] || '').trim(), d = _normDomain(r[1]), w = String(r[2] || '').trim();
+      const wh = String(r[0] || '').trim(), d = _normDomain(r[1]), w = _normWeek(r[2]);
       const score = _toNum(r[3]) ?? 0;
       if (d !== dom) return; if (!applyManagerFilters(wh, d, filters)) return;
       if (!_isWeek27Plus(w)) return;
@@ -1272,7 +1272,7 @@ function getUnderperformingWarehouses(metricName, domain, filters) {
     });
   } else if (metricName === "Increase GMore fresh order penetration") {
     sd.forEach(r => {
-      const wh = String(r[0] || '').trim(), d = _normDomain(r[1]), w = String(r[2] || '').trim();
+      const wh = String(r[0] || '').trim(), d = _normDomain(r[1]), w = _normWeek(r[2]);
       const other = +r[3] || 0, fv = +r[4] || 0;
       if (d !== 'GMore') return; if (!applyManagerFilters(wh, d, filters)) return;
       if (!_isWeek27Plus(w)) return;
@@ -1281,7 +1281,7 @@ function getUnderperformingWarehouses(metricName, domain, filters) {
     });
   } else if (metricName === "Decrease GMore customer quality complaint rate (problematic order) F&V") {
     sd.forEach(r => {
-      const wh = String(r[0] || '').trim(), d = _normDomain(r[1]), w = String(r[2] || '').trim();
+      const wh = String(r[0] || '').trim(), d = _normDomain(r[1]), w = _normWeek(r[2]);
       const ord = +r[3] || 0, fb = +r[4] || 0;
       if (d !== 'GMore') return; if (!applyManagerFilters(wh, d, filters)) return;
       if (!_isWeek27Plus(w)) return;
@@ -2279,7 +2279,7 @@ function analyzeWarehousesByDomain(domain, minWeeks, metricName = 'all') {
     sd.forEach(row => {
       const wh = String(row[0] || '').trim();
       const dom = _normDomain(row[1]);
-      const week = String(row[2] || '').trim();
+      const week = _normWeek(row[2]);
 
       if (dom !== domain || !wh || !week) return;
       if (!_isWeek27Plus(week)) return;

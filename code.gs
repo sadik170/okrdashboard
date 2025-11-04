@@ -1656,7 +1656,7 @@ function getFilterOptions() {
     weeks: ['all'],
     sahaYoneticileri: ['all'],
     operasyonMudurleri: ['all'],
-    bolgeMudurleri: ['all'] // ← YENİ
+    bolgeMudurleri: ['all']
   };
 
   const sheets = [
@@ -1666,15 +1666,33 @@ function getFilterOptions() {
     "Increase throughput for G10 and GMore",
     "Decrease missed order ratio",
     "Decrease the problematic order ratio (G10 and GMore)",
-    "Decrease non-agreed / problematic shipment ratios",              // ← önemli
+    "Decrease non-agreed / problematic shipment ratios",
     "Decrease GMore customer quality complaint rate (problematic order) F&V",
     "Increase GMore fresh order penetration",
     "Decrease the number of pending + rejected pallet backlog (Ops)"
   ];
 
   const wSet = new Set(), wkSet = new Set();
-  const START = new Date(2025, 6, 1);
 
+  // Hafta filtresini OKR verilerinin trend grafiklerinden al
+  try {
+    const okrData = getOKRData({});
+    okrData.forEach(metric => {
+      if (metric._isDummy) return;
+      metric.data.forEach(d => {
+        if (d.weeklyData && d.weeklyData.length) {
+          d.weeklyData.forEach(wd => {
+            if (wd.week) wkSet.add(String(wd.week));
+          });
+        }
+      });
+    });
+  } catch (e) {
+    console.error('Week filter error:', e);
+  }
+
+  // Warehouse toplama (eski mantık korundu)
+  const START = new Date(2025, 6, 1);
   sheets.forEach(s => {
     const sd = getSheetData(s);
     if (!sd) return;
@@ -1685,35 +1703,42 @@ function getFilterOptions() {
         const resp = String(r[2] || '').trim().toLowerCase();
         if (!dt || dt < START) return;
         if (resp !== 'operasyon') return;
-        wkSet.add(_isoWeekLabel(dt));
         return;
       }
 
       if (s === "Decrease non-agreed / problematic shipment ratios") {
-        const wkCell = r[0], whCell = r[1];
+        const whCell = r[1];
         if (whCell) wSet.add(String(whCell));
-        if (wkCell) wkSet.add(String(wkCell));
         return;
       }
 
       if (r[0]) wSet.add(String(r[0])); // warehouse
-      if (r[2]) wkSet.add(String(r[2])); // week
     });
   });
 
   const managers = getWarehouseManagers();
-  const sahaSet = new Set(), opsSet = new Set(), bolgeSet = new Set(); // ← YENİ
+  const sahaSet = new Set(), opsSet = new Set(), bolgeSet = new Set();
   Object.values(managers).forEach(info => {
     if (info.sahaYoneticisi) sahaSet.add(info.sahaYoneticisi);
     if (info.operasyonMuduru) opsSet.add(info.operasyonMuduru);
-    if (info.bolgeMuduru) bolgeSet.add(info.bolgeMuduru);          // ← YENİ
+    if (info.bolgeMuduru) bolgeSet.add(info.bolgeMuduru);
   });
 
   if (wSet.size) opts.warehouses = ['all', ...Array.from(wSet).sort()];
-  if (wkSet.size) opts.weeks = ['all', ...Array.from(wkSet).sort((a, b) => (parseInt(a.replace(/\D/g, '')) || 0) - (parseInt(b.replace(/\D/g, '')) || 0))];
+
+  // Haftaları sayısal sıraya göre sırala (W27, W28, W29...)
+  if (wkSet.size) {
+    const sortedWeeks = Array.from(wkSet).sort((a, b) => {
+      const numA = parseInt(a.replace(/\D/g, '')) || 0;
+      const numB = parseInt(b.replace(/\D/g, '')) || 0;
+      return numA - numB;
+    });
+    opts.weeks = ['all', ...sortedWeeks];
+  }
+
   if (sahaSet.size) opts.sahaYoneticileri = ['all', ...Array.from(sahaSet).sort()];
   if (opsSet.size) opts.operasyonMudurleri = ['all', ...Array.from(opsSet).sort()];
-  if (bolgeSet.size) opts.bolgeMudurleri = ['all', ...Array.from(bolgeSet).sort()]; // ← YENİ
+  if (bolgeSet.size) opts.bolgeMudurleri = ['all', ...Array.from(bolgeSet).sort()];
 
   return opts;
 }
@@ -1819,8 +1844,12 @@ function getDashboardSummary(filters = {}) {
  */
 function getManagerPerformance(filters = {}) {
   try {
+    console.log('getManagerPerformance called with filters:', filters);
+
     const managers = getWarehouseManagers();
     const personTargets = getPersonTargets();
+
+    console.log('Total warehouse managers:', Object.keys(managers).length);
 
     // Tüm yöneticileri topla
     const opsManagers = new Set();
@@ -1831,6 +1860,9 @@ function getManagerPerformance(filters = {}) {
       if (info.sahaYoneticisi) sahaYoneticileri.add(info.sahaYoneticisi);
     });
 
+    console.log('Unique ops managers:', opsManagers.size);
+    console.log('Unique saha yoneticileri:', sahaYoneticileri.size);
+
     const result = {
       operasyonMudurleri: [],
       sahaYoneticileri: [],
@@ -1840,14 +1872,21 @@ function getManagerPerformance(filters = {}) {
     // Her yönetici için performans hesapla
     opsManagers.forEach(name => {
       const perf = calculatePersonPerformance(name, 'operasyonMuduru', filters);
-      if (perf) result.operasyonMudurleri.push(perf);
+      if (perf) {
+        console.log('Ops Manager performance calculated:', name);
+        result.operasyonMudurleri.push(perf);
+      }
     });
 
     sahaYoneticileri.forEach(name => {
       const perf = calculatePersonPerformance(name, 'sahaYoneticisi', filters);
-      if (perf) result.sahaYoneticileri.push(perf);
+      if (perf) {
+        console.log('Saha Yoneticisi performance calculated:', name);
+        result.sahaYoneticileri.push(perf);
+      }
     });
 
+    console.log('Final result - Ops:', result.operasyonMudurleri.length, 'Saha:', result.sahaYoneticileri.length);
     return result;
   } catch (e) {
     console.error('getManagerPerformance error:', e);
@@ -1937,6 +1976,12 @@ function calculatePersonPerformance(personName, role, filters) {
       performance.overallProgress = totalProgress / progressCount;
     }
 
+    // Eğer hiç metrik yoksa null döndür
+    if (progressCount === 0) {
+      console.log('No metrics calculated for:', personName);
+      return null;
+    }
+
     return performance;
   } catch (e) {
     console.error('calculatePersonPerformance error:', personName, e);
@@ -2012,29 +2057,52 @@ function getActionPlans(metricName, domain, warehouse, weeks = 4) {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sheet = ss.getSheetByName('Action Plans');
 
-    if (!sheet) return [];
+    console.log('getActionPlans called:', {metricName, domain, warehouse, weeks});
+
+    if (!sheet) {
+      console.log('Action Plans sheet not found');
+      return [];
+    }
 
     const data = sheet.getDataRange().getValues();
+    console.log('Sheet has', data.length, 'rows');
+
     if (data.length <= 1) return []; // Sadece başlık varsa
 
     const plans = [];
+    const normalizedMetric = String(metricName || '').trim();
+    const normalizedDomain = String(domain || '').trim();
+    const normalizedWarehouse = String(warehouse || '').trim();
+
+    console.log('Searching for:', {normalizedMetric, normalizedDomain, normalizedWarehouse});
 
     // Başlık satırını atla (index 0)
     for (let i = data.length - 1; i >= 1; i--) { // Sondan başa doğru (en yeni üstte)
       const row = data[i];
       const [date, week, metric, dom, wh, plan] = row;
 
-      if (metric === metricName && dom === domain && wh === warehouse) {
+      const rowMetric = String(metric || '').trim();
+      const rowDomain = String(dom || '').trim();
+      const rowWarehouse = String(wh || '').trim();
+
+      // Debug log
+      if (i === data.length - 1) {
+        console.log('First data row:', {rowMetric, rowDomain, rowWarehouse, plan});
+      }
+
+      if (rowMetric === normalizedMetric && rowDomain === normalizedDomain && rowWarehouse === normalizedWarehouse) {
+        console.log('Match found at row', i);
         plans.push({
           date: date,
-          week: week,
-          plan: plan
+          week: week || '',
+          plan: plan || ''
         });
 
         if (plans.length >= weeks) break;
       }
     }
 
+    console.log('Found', plans.length, 'plans');
     return plans;
   } catch (e) {
     console.error('getActionPlans error:', e);

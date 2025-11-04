@@ -1533,16 +1533,28 @@ function renderUniqueOKRCount(okrs){
     let performanceSortBy = { metric: null, ascending: true };
 
     function renderPerformanceTables(data) {
-      if (!data) return;
+      console.log('renderPerformanceTables called with data:', data);
+
+      if (!data) {
+        console.log('No data provided to renderPerformanceTables');
+        return;
+      }
+
       performanceData = data;
 
       const container = document.getElementById('performanceTablesContainer');
-      if (!container) return;
+      if (!container) {
+        console.log('performanceTablesContainer not found');
+        return;
+      }
 
       const hasData = (data.operasyonMudurleri && data.operasyonMudurleri.length > 0) ||
                       (data.sahaYoneticileri && data.sahaYoneticileri.length > 0);
 
+      console.log('Has data:', hasData, 'Ops:', data.operasyonMudurleri?.length, 'Saha:', data.sahaYoneticileri?.length);
+
       if (!hasData) {
+        console.log('No manager data available, hiding container');
         container.innerHTML = '';
         return;
       }

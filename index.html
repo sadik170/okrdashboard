@@ -302,8 +302,24 @@
       </div>
     </div>
 
-    <!-- Filters -->
+    <!-- Tabs -->
     <div class="glass-morphism shadow-xl border-b border-white/10 sticky top-20 z-40">
+      <div class="container mx-auto px-4 py-2">
+        <div class="flex space-x-2">
+          <button id="tabDashboard" class="px-6 py-3 rounded-t-xl font-semibold transition-all bg-white/20 text-white border-b-2 border-getir-yellow"
+                  onclick="switchTab('dashboard')">
+            📊 Ana Dashboard
+          </button>
+          <button id="tabChronic" class="px-6 py-3 rounded-t-xl font-semibold transition-all bg-white/5 text-white/60 hover:bg-white/10"
+                  onclick="switchTab('chronic')">
+            📉 Kronik Depo Analizi
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div id="filtersSection" class="glass-morphism shadow-xl border-b border-white/10 sticky top-32 z-40">
       <div class="container mx-auto px-4 py-4">
         <div class="flex justify-between items-center mb-3">
           <h3 class="text-white font-semibold text-lg">Filtreler</h3>
@@ -315,7 +331,7 @@
         </div>
 
         <div id="filterContainer" class="filter-container">
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-4">
             <!-- Depo -->
             <div class="flex flex-col space-y-2">
               <label class="text-sm font-medium text-white/80">Depo:</label>
@@ -328,6 +344,14 @@
             <div class="flex flex-col space-y-2">
               <label class="text-sm font-medium text-white/80">Domain:</label>
               <select id="domainFilter" class="px-4 py-2 glass-morphism border border-white/20 rounded-xl text-white focus:ring-2 focus:ring-getir-purple focus:border-transparent transition-all hover:bg-white/10">
+                <option value="all" class="bg-gray-800">Tümü</option>
+              </select>
+            </div>
+
+            <!-- Hafta -->
+            <div class="flex flex-col space-y-2">
+              <label class="text-sm font-medium text-white/80">Hafta:</label>
+              <select id="weekFilter" class="px-4 py-2 glass-morphism border border-white/20 rounded-xl text-white focus:ring-2 focus:ring-getir-purple focus:border-transparent transition-all hover:bg-white/10">
                 <option value="all" class="bg-gray-800">Tümü</option>
               </select>
             </div>
@@ -373,8 +397,8 @@
       </div>
     </div>
 
-    <!-- Summary + Progress + Metrics -->
-<div class="container mx-auto px-4 py-8">
+    <!-- Dashboard Container -->
+    <div id="dashboardContainer" class="container mx-auto px-4 py-8">
 
   <!-- Summary cards -->
   <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -509,6 +533,22 @@
 
   </div><!-- /grid -->
 
+  <!-- Performans Tabloları -->
+  <div id="performanceTablesContainer" class="mb-8">
+    <!-- Loading placeholder -->
+    <div class="glass-morphism rounded-2xl p-8 border border-white/20 mb-8">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold text-white flex items-center">
+          <span class="w-1 h-8 bg-gradient-to-b from-getir-yellow to-yellow-300 rounded-full mr-3"></span>
+          Yönetici Performans Tabloları
+        </h2>
+      </div>
+      <div class="text-center text-white/60 py-8">
+        <div class="animate-pulse">Yükleniyor...</div>
+      </div>
+    </div>
+  </div>
+
   <!-- Genel İlerleme -->
   <div class="glass-morphism rounded-2xl p-8 mb-8 border border-white/20">
     <div class="flex items-center justify-between mb-6">
@@ -555,7 +595,38 @@
   <!-- Metric Cards -->
   <div id="okrContainer" class="space-y-8"></div>
 
-</div><!-- /container -->
+</div><!-- /dashboardContainer -->
+
+<!-- Kronik Depo Analizi Container -->
+<div id="chronicContainer" class="container mx-auto px-4 py-8 hidden">
+  <div class="glass-morphism rounded-2xl p-8 mb-8 border border-white/20">
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-2xl font-bold text-white flex items-center">
+        <span class="w-1 h-8 bg-gradient-to-b from-red-400 to-red-600 rounded-full mr-3"></span>
+        Kronik Depo Analizi - Depo Karnesi
+      </h2>
+      <div class="flex items-center space-x-4">
+        <select id="chronicDomainFilter" class="px-4 py-2 glass-morphism border border-white/20 rounded-xl text-white"
+                onchange="loadChronicAnalysis()">
+          <option value="all">Tüm Domainler</option>
+          <option value="G10">G10</option>
+          <option value="GMore">GMore</option>
+        </select>
+        <select id="chronicMetricFilter" class="px-4 py-2 glass-morphism border border-white/20 rounded-xl text-white"
+                onchange="loadChronicAnalysis()">
+          <option value="all">Tüm Metrikler</option>
+        </select>
+        <button onclick="loadChronicAnalysis()" class="px-4 py-2 bg-gradient-to-r from-getir-purple to-getir-purple-light text-white rounded-xl hover:shadow-lg">
+          🔄 Yenile
+        </button>
+      </div>
+    </div>
+
+    <div id="chronicContent" class="space-y-8">
+      <div class="text-center text-white/60 py-12">Yükleniyor...</div>
+    </div>
+  </div>
+</div>
 
   <script>
     // [NEW] Modal state
@@ -607,6 +678,7 @@ function showWarehouseModal(metricName, domain, unit){
     const filters = {
       warehouse:        document.getElementById('warehouseFilter').value,
       domain:           document.getElementById('domainFilter').value,
+      week:             document.getElementById('weekFilter').value,
       sahaYoneticisi:   document.getElementById('sahaYoneticisiFilter').value,
       operasyonMuduru:  document.getElementById('operasyonMuduruFilter').value,
       bolgeMuduru:      document.getElementById('bolgeMuduruFilter').value
@@ -699,6 +771,208 @@ function renderWarehouseModalList(){
 // [NEW] Modal kapat
 function closeWarehouseModal(){
   document.getElementById('warehouseModal').classList.add('hidden');
+}
+
+// === AKSİYON PLANI MODAL ===
+let actionPlanData = { metricName: '', domain: '', unit: '', warehouses: [] };
+
+function showActionPlanModal(metricName, domain, unit){
+  try{
+    actionPlanData = { metricName, domain, unit, warehouses: [] };
+
+    const modal = document.getElementById('actionPlanModal');
+    const subtitle = document.getElementById('actionPlanModalSubtitle');
+    const body = document.getElementById('actionPlanModalBody');
+
+    subtitle.textContent = `${metricName} • ${domain}`;
+    body.innerHTML = '<div class="text-center text-white/60 py-8">Yükleniyor...</div>';
+
+    modal.classList.remove('hidden');
+
+    const filters = {
+      warehouse: document.getElementById('warehouseFilter').value,
+      domain: document.getElementById('domainFilter').value,
+      week: document.getElementById('weekFilter').value,
+      sahaYoneticisi: document.getElementById('sahaYoneticisiFilter').value,
+      operasyonMuduru: document.getElementById('operasyonMuduruFilter').value,
+      bolgeMuduru: document.getElementById('bolgeMuduruFilter').value
+    };
+
+    google.script.run
+      .withSuccessHandler((warehouses)=>{
+        actionPlanData.warehouses = warehouses || [];
+        renderActionPlanList();
+      })
+      .withFailureHandler(()=>{
+        body.innerHTML = '<div class="text-center text-red-400 py-8">Veri yüklenemedi.</div>';
+      })
+      .getBottom10Warehouses(metricName, domain, filters, 10);
+
+  }catch(e){ console.error(e); }
+}
+
+function closeActionPlanModal(){
+  document.getElementById('actionPlanModal').classList.add('hidden');
+}
+
+function renderActionPlanList(){
+  const body = document.getElementById('actionPlanModalBody');
+  const {warehouses, metricName, domain, unit} = actionPlanData;
+
+  if (!warehouses || !warehouses.length) {
+    body.innerHTML = '<div class="text-center text-white/60 py-8">Hedef altında depo bulunamadı.</div>';
+    return;
+  }
+
+  let html = '';
+  warehouses.forEach((wh, idx) => {
+    html += `
+      <div class="glass-morphism-dark rounded-xl p-6 border border-white/20">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center space-x-4">
+            <span class="text-2xl font-bold text-white/40">#${idx + 1}</span>
+            <div>
+              <h4 class="text-lg font-bold text-white">${wh.warehouse}</h4>
+              <p class="text-sm text-white/60">${wh.domain}</p>
+            </div>
+          </div>
+          <div class="text-right">
+            <p class="text-sm text-white/60">Mevcut / Hedef</p>
+            <p class="text-lg font-bold">
+              <span class="text-red-400">${formatValue(wh.value, unit)}</span>
+              <span class="text-white/40"> / </span>
+              <span class="text-white/80">${wh.targetText || formatValue(wh.targetValue, unit)}</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Geçmiş Aksiyonlar -->
+        <div class="mb-4">
+          <button class="text-sm text-white/60 hover:text-white transition underline"
+                  onclick="togglePastActions('${wh.warehouse}')">
+            📜 Geçmiş Aksiyonları Gör
+          </button>
+          <div id="pastActions_${wh.warehouse.replace(/\s/g, '_')}" class="hidden mt-3 space-y-2"></div>
+        </div>
+
+        <!-- Aksiyon Planı Formu -->
+        <div>
+          <label class="block text-sm font-medium text-white/80 mb-2">Bu Hafta Aksiyon Planı:</label>
+          <textarea id="actionPlan_${wh.warehouse.replace(/\s/g, '_')}"
+                    class="w-full px-4 py-3 glass-morphism border border-white/20 rounded-xl text-white focus:ring-2 focus:ring-getir-purple resize-none"
+                    rows="3"
+                    placeholder="Bu depo için alınacak aksiyonları yazın..."></textarea>
+
+          <div class="mt-3">
+            <label class="block text-sm font-medium text-white/80 mb-2">Termin Süresi:</label>
+            <input type="date" id="deadline_${wh.warehouse.replace(/\s/g, '_')}"
+                   class="px-4 py-2 glass-morphism border border-white/20 rounded-xl text-white focus:ring-2 focus:ring-getir-purple">
+          </div>
+
+          <button class="mt-3 px-4 py-2 bg-gradient-to-r from-getir-yellow to-yellow-300 text-getir-purple font-semibold rounded-xl hover:shadow-lg transition"
+                  onclick="saveWarehouseActionPlan('${wh.warehouse}')">
+            💾 Kaydet
+          </button>
+        </div>
+      </div>`;
+  });
+
+  body.innerHTML = html;
+
+  // Geçmiş aksiyonları yükle
+  warehouses.forEach(wh => {
+    loadPastActions(wh.warehouse);
+  });
+}
+
+function togglePastActions(warehouse){
+  const id = 'pastActions_' + warehouse.replace(/\s/g, '_');
+  const el = document.getElementById(id);
+  if (el) {
+    el.classList.toggle('hidden');
+  }
+}
+
+function loadPastActions(warehouse){
+  const {metricName, domain} = actionPlanData;
+  const id = 'pastActions_' + warehouse.replace(/\s/g, '_');
+
+  google.script.run
+    .withSuccessHandler((plans)=>{
+      console.log('FRONTEND: Received action plans for', warehouse, ':', plans);
+      console.log('FRONTEND: Plans count:', plans?.length);
+
+      const el = document.getElementById(id);
+      if (!el) {
+        console.error('FRONTEND: Element not found:', id);
+        return;
+      }
+
+      if (!plans || !plans.length) {
+        console.log('FRONTEND: No plans to display for', warehouse);
+        el.innerHTML = '<p class="text-xs text-white/40 italic">Geçmiş aksiyon bulunamadı.</p>';
+        return;
+      }
+
+      console.log('FRONTEND: Rendering', plans.length, 'plans for', warehouse);
+      let html = '<div class="space-y-2">';
+      plans.forEach(p => {
+        console.log('FRONTEND: Processing plan:', p);
+        const dateStr = p.date || '-';
+        const deadlineStr = p.deadline || '';
+        html += `
+          <div class="bg-white/5 p-3 rounded-lg">
+            <div class="flex justify-between text-xs text-white/60 mb-1">
+              <span>📅 ${dateStr}</span>
+              <span>${p.week || '-'}</span>
+            </div>
+            <p class="text-sm text-white/80">${p.plan || '-'}</p>
+            ${deadlineStr ? `<div class="mt-2 text-xs text-yellow-400">⏰ Termin: ${deadlineStr}</div>` : ''}
+          </div>`;
+      });
+      html += '</div>';
+      el.innerHTML = html;
+      console.log('FRONTEND: Action plans rendered successfully for', warehouse);
+    })
+    .withFailureHandler((error)=>{
+      console.error('FRONTEND: getActionPlans failed for', warehouse, ':', error);
+    })
+    .getActionPlans(metricName, domain, warehouse, 4);
+}
+
+function saveWarehouseActionPlan(warehouse){
+  const {metricName, domain} = actionPlanData;
+  const planId = 'actionPlan_' + warehouse.replace(/\s/g, '_');
+  const deadlineId = 'deadline_' + warehouse.replace(/\s/g, '_');
+
+  const textarea = document.getElementById(planId);
+  const deadlineInput = document.getElementById(deadlineId);
+
+  if (!textarea) return;
+
+  const plan = textarea.value.trim();
+  if (!plan) {
+    showErrorMessage('Lütfen aksiyon planı yazın.');
+    return;
+  }
+
+  const deadline = deadlineInput ? deadlineInput.value : null;
+
+  google.script.run
+    .withSuccessHandler((result)=>{
+      if (result && result.success) {
+        showSuccessMessage('Aksiyon planı kaydedildi!');
+        textarea.value = '';
+        if (deadlineInput) deadlineInput.value = '';
+        loadPastActions(warehouse); // Listeyi güncelle
+      } else {
+        showErrorMessage(result.message || 'Kayıt başarısız.');
+      }
+    })
+    .withFailureHandler(()=>{
+      showErrorMessage('Kayıt sırasında hata oluştu.');
+    })
+    .saveActionPlan(metricName, domain, warehouse, plan, null, deadline);
 }
 
 // [NEW] Excel (CSV) export - Türkiye locale'ine uygun format
@@ -913,7 +1187,7 @@ function getStatus(progress, hit){
           if (!options) return;
           populateSelect('warehouseFilter', options.warehouses || ['all']);
           populateSelect('domainFilter', options.domains || ['all']);
-          // weekFilter YOK
+          populateSelect('weekFilter', options.weeks || ['all']);
           populateSelect('sahaYoneticisiFilter', options.sahaYoneticileri || ['all']);
           populateSelect('operasyonMuduruFilter', options.operasyonMudurleri || ['all']);
           populateSelect('bolgeMuduruFilter', options.bolgeMudurleri || ['all']);
@@ -921,6 +1195,7 @@ function getStatus(progress, hit){
         .withFailureHandler(()=>{
           populateSelect('warehouseFilter',['all']);
           populateSelect('domainFilter',['all','G10','GMore']);
+          populateSelect('weekFilter',['all']);
           populateSelect('sahaYoneticisiFilter',['all']);
           populateSelect('operasyonMuduruFilter',['all']);
           populateSelect('bolgeMuduruFilter',['all']);
@@ -948,6 +1223,7 @@ function getStatus(progress, hit){
         const filters = {
           warehouse:        document.getElementById('warehouseFilter').value,
           domain:           document.getElementById('domainFilter').value,
+          week:             document.getElementById('weekFilter').value,
           sahaYoneticisi:   document.getElementById('sahaYoneticisiFilter').value,
           operasyonMuduru:  document.getElementById('operasyonMuduruFilter').value,
           bolgeMuduru:      document.getElementById('bolgeMuduruFilter').value
@@ -969,6 +1245,19 @@ google.script.run
   .withSuccessHandler(renderWarehouseSummary)
   .withFailureHandler(()=>renderWarehouseSummary(null))
   .getWarehouseSummary(filters);
+
+        // Performans Tabloları
+        google.script.run
+          .withSuccessHandler((data)=>{
+            console.log('FRONTEND: Received performance data:', data);
+            console.log('FRONTEND: Ops count:', data?.operasyonMudurleri?.length);
+            console.log('FRONTEND: Saha count:', data?.sahaYoneticileri?.length);
+            renderPerformanceTables(data);
+          })
+          .withFailureHandler((error)=>{
+            console.error('FRONTEND: getManagerPerformance failed:', error);
+          })
+          .getManagerPerformance(filters);
 
         // OKR verileri
         google.script.run
@@ -1096,7 +1385,11 @@ google.script.run
               (metricSupportsWarehouse(metric.name) && d.domain!=='MultiTarget')
                 ? `<button class="ml-2 px-3 py-1 rounded-lg text-xs font-semibold bg-white/10 text-white border border-white/20 hover:bg-white/20 transition"
                     onclick="showWarehouseModal('${safeMetricName}','${d.domain}','${metric.unit ? metric.unit : ''}')">
-                    Depo Detay
+                    📊 Depo Detay
+                   </button>
+                   <button class="ml-2 px-3 py-1 rounded-lg text-xs font-semibold bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:shadow-lg transition"
+                    onclick="showActionPlanModal('${safeMetricName}','${d.domain}','${metric.unit ? metric.unit : ''}')">
+                    ✏️ Aksiyon Planı
                    </button>`
                 : ``
             }
@@ -1288,6 +1581,236 @@ function renderUniqueOKRCount(okrs){
       return n.toFixed(2) + (unit || '');
     }
 
+    // === Performans Tabloları Render ===
+    let performanceData = null;
+    let performanceSortBy = { metric: null, ascending: true };
+
+    function renderPerformanceTables(data) {
+      console.log('renderPerformanceTables called with data:', data);
+
+      const container = document.getElementById('performanceTablesContainer');
+      if (!container) {
+        console.log('performanceTablesContainer not found');
+        return;
+      }
+
+      if (!data) {
+        console.log('No data provided to renderPerformanceTables');
+        container.innerHTML = `
+          <div class="glass-morphism rounded-2xl p-8 border border-white/20 mb-8">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-2xl font-bold text-white flex items-center">
+                <span class="w-1 h-8 bg-gradient-to-b from-getir-yellow to-yellow-300 rounded-full mr-3"></span>
+                Yönetici Performans Tabloları
+              </h2>
+            </div>
+            <div class="text-center text-red-400 py-8">⚠️ Veri yüklenemedi</div>
+          </div>`;
+        return;
+      }
+
+      performanceData = data;
+
+      const hasData = (data.operasyonMudurleri && data.operasyonMudurleri.length > 0) ||
+                      (data.sahaYoneticileri && data.sahaYoneticileri.length > 0);
+
+      console.log('Has data:', hasData, 'Ops:', data.operasyonMudurleri?.length, 'Saha:', data.sahaYoneticileri?.length);
+
+      if (!hasData) {
+        console.log('No manager data available');
+        container.innerHTML = `
+          <div class="glass-morphism rounded-2xl p-8 border border-white/20 mb-8">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-2xl font-bold text-white flex items-center">
+                <span class="w-1 h-8 bg-gradient-to-b from-getir-yellow to-yellow-300 rounded-full mr-3"></span>
+                Yönetici Performans Tabloları
+              </h2>
+            </div>
+            <div class="text-center text-white/60 py-8">ℹ️ Seçili filtrelere uygun yönetici verisi bulunamadı</div>
+          </div>`;
+        return;
+      }
+
+      let html = `
+        <div class="glass-morphism rounded-2xl p-8 border border-white/20 mb-8">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-white flex items-center">
+              <span class="w-1 h-8 bg-gradient-to-b from-getir-yellow to-yellow-300 rounded-full mr-3"></span>
+              Yönetici Performans Tabloları
+            </h2>
+            <div class="flex items-center space-x-2">
+              <span class="px-3 py-1 rounded-full text-xs font-medium bg-white/10 text-white/80">Metrik Bazlı Sıralama</span>
+            </div>
+          </div>`;
+
+      // Operasyon Müdürleri Tablosu
+      if (data.operasyonMudurleri && data.operasyonMudurleri.length > 0) {
+        html += renderManagerTable(data.operasyonMudurleri, 'Operasyon Müdürleri', data.metrics, 'ops');
+      }
+
+      // Saha Yöneticileri Tablosu
+      if (data.sahaYoneticileri && data.sahaYoneticileri.length > 0) {
+        html += renderManagerTable(data.sahaYoneticileri, 'Saha Yöneticileri', data.metrics, 'saha');
+      }
+
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    function renderManagerTable(managers, title, metrics, tableId) {
+      if (!managers || !managers.length) return '';
+
+      // Sıralama uygula
+      let sortedManagers = [...managers];
+      if (performanceSortBy.metric) {
+        sortedManagers.sort((a, b) => {
+          const metric = performanceSortBy.metric;
+          let aVal, bVal;
+
+          if (metric === 'overall') {
+            aVal = a.overallProgress || 0;
+            bVal = b.overallProgress || 0;
+          } else if (metric === 'name') {
+            return performanceSortBy.ascending
+              ? (a.name || '').localeCompare(b.name || '')
+              : (b.name || '').localeCompare(a.name || '');
+          } else {
+            aVal = a.metrics[metric]?.progress || 0;
+            bVal = b.metrics[metric]?.progress || 0;
+          }
+
+          return performanceSortBy.ascending ? (aVal - bVal) : (bVal - aVal);
+        });
+      } else {
+        // Varsayılan: en kötüden iyiye (overall progress'e göre)
+        sortedManagers.sort((a, b) => (a.overallProgress || 0) - (b.overallProgress || 0));
+      }
+
+      let html = `
+        <div class="mb-8">
+          <h3 class="text-xl font-bold text-white mb-4">${title}</h3>
+          <div class="overflow-x-auto rounded-xl">
+            <table class="min-w-full text-sm">
+              <thead class="bg-white/10 text-white/80">
+                <tr>
+                  <th class="text-left px-4 py-3 cursor-pointer hover:bg-white/20 transition"
+                      onclick="sortPerformanceTable('name', '${tableId}')">
+                    İsim ${getSortIcon('name')}
+                  </th>
+                  <th class="text-left px-4 py-3 cursor-pointer hover:bg-white/20 transition"
+                      onclick="sortPerformanceTable('overall', '${tableId}')">
+                    Genel Performans ${getSortIcon('overall')}
+                  </th>`;
+
+      // Her metrik için sütun
+      metrics.forEach(metric => {
+        const shortName = getShortMetricName(metric);
+        html += `
+                  <th class="text-left px-4 py-3 cursor-pointer hover:bg-white/20 transition whitespace-nowrap"
+                      onclick="sortPerformanceTable('${metric}', '${tableId}')">
+                    ${shortName} ${getSortIcon(metric)}
+                  </th>`;
+      });
+
+      html += `
+                </tr>
+              </thead>
+              <tbody class="bg-white/5 text-white">`;
+
+      // Satırlar
+      sortedManagers.forEach((manager, idx) => {
+        const bgClass = idx % 2 === 0 ? 'bg-white/5' : '';
+        html += `
+                <tr class="${bgClass} hover:bg-white/10 transition">
+                  <td class="px-4 py-3 font-semibold">${manager.name || '-'}</td>
+                  <td class="px-4 py-3">
+                    <div class="flex items-center space-x-2">
+                      <div class="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
+                        <div class="h-full bg-gradient-to-r ${
+                          (manager.overallProgress || 0) >= 85
+                            ? 'from-green-400 to-green-500'
+                            : (manager.overallProgress || 0) >= 50
+                              ? 'from-yellow-400 to-yellow-500'
+                              : 'from-red-400 to-red-500'
+                        }" style="width: ${Math.min(100, manager.overallProgress || 0)}%"></div>
+                      </div>
+                      <span class="text-xs font-bold">${Math.round(manager.overallProgress || 0)}%</span>
+                    </div>
+                  </td>`;
+
+        // Her metrik için değer
+        metrics.forEach(metric => {
+          const metricData = manager.metrics[metric];
+          if (metricData) {
+            const progress = metricData.progress || 0;
+            const hit = metricData.hit;
+            html += `
+                  <td class="px-4 py-3">
+                    <div class="text-xs">
+                      <span class="${hit ? 'text-green-400' : 'text-red-400'} font-semibold">
+                        ${formatValue(metricData.current, metricData.unit)}
+                      </span>
+                      <span class="text-white/40">/</span>
+                      <span class="text-white/60">
+                        ${formatValue(metricData.target, metricData.unit)}
+                      </span>
+                    </div>
+                    <div class="mt-1 h-1 bg-white/10 rounded-full overflow-hidden">
+                      <div class="h-full ${hit ? 'bg-green-400' : 'bg-red-400'}"
+                           style="width: ${Math.min(100, progress)}%"></div>
+                    </div>
+                  </td>`;
+          } else {
+            html += '<td class="px-4 py-3 text-white/40">-</td>';
+          }
+        });
+
+        html += '</tr>';
+      });
+
+      html += `
+              </tbody>
+            </table>
+          </div>
+        </div>`;
+
+      return html;
+    }
+
+    function sortPerformanceTable(metric, tableId) {
+      if (performanceSortBy.metric === metric) {
+        performanceSortBy.ascending = !performanceSortBy.ascending;
+      } else {
+        performanceSortBy.metric = metric;
+        performanceSortBy.ascending = true; // En kötüden iyiye başla
+      }
+      renderPerformanceTables(performanceData);
+    }
+
+    function getSortIcon(metric) {
+      if (performanceSortBy.metric !== metric) return '↕';
+      return performanceSortBy.ascending ? '↑' : '↓';
+    }
+
+    function getShortMetricName(fullName) {
+      const mapping = {
+        "Decrease number of WHs with availability below 85%": "Availability <85%",
+        "Decrease the number of pending + rejected pallet backlog (Ops)": "Pallet Backlog",
+        "Achieve LMD variable cost per order target for G10 and GMore (Courier + Fleet)": "LMD Cost",
+        "Decrease the problematic order ratio (G10 and GMore)": "Problematic Orders",
+        "Increase throughput for G10 and GMore": "Throughput",
+        "Achieve Waste + Waste A&M ratio target": "Waste Ratio",
+        "Decrease missed order ratio": "Missed Orders",
+        "Decrease lateness percent": "Lateness",
+        "Decrease non-agreed / problematic shipment ratios": "Non-Agreed Ship.",
+        "Increase stock accuracy in dark stores": "Stock Accuracy",
+        "Increase Franchise Satisfaction Score": "Franchise Sat.",
+        "Increase GMore fresh order penetration": "Fresh Orders",
+        "Decrease GMore customer quality complaint rate (problematic order) F&V": "F&V Complaints"
+      };
+      return mapping[fullName] || fullName.substring(0, 20) + '...';
+    }
+
     // === Trend grafiği: SARI tema ===
     function createTrendChart(canvasId, data, unit = '%') {
       const canvas = document.getElementById(canvasId);
@@ -1398,7 +1921,7 @@ function renderUniqueOKRCount(okrs){
     function resetFilters(){
       document.getElementById('warehouseFilter').value='all';
       document.getElementById('domainFilter').value='all';
-      // weekFilter yok
+      document.getElementById('weekFilter').value='all';
       document.getElementById('sahaYoneticisiFilter').value='all';
       document.getElementById('operasyonMuduruFilter').value='all';
       document.getElementById('bolgeMuduruFilter').value='all';
@@ -1425,6 +1948,218 @@ function renderUniqueOKRCount(okrs){
         </div>`;
     }
     function hideLoading(){ /* no-op */ }
+
+    // === SEKME GEÇİŞİ ===
+    let currentTab = 'dashboard';
+
+    function switchTab(tab) {
+      currentTab = tab;
+
+      const dashboardContainer = document.getElementById('dashboardContainer');
+      const chronicContainer = document.getElementById('chronicContainer');
+      const filtersSection = document.getElementById('filtersSection');
+      const tabDashboard = document.getElementById('tabDashboard');
+      const tabChronic = document.getElementById('tabChronic');
+
+      if (tab === 'dashboard') {
+        dashboardContainer.classList.remove('hidden');
+        chronicContainer.classList.add('hidden');
+        filtersSection.classList.remove('hidden');
+
+        tabDashboard.className = 'px-6 py-3 rounded-t-xl font-semibold transition-all bg-white/20 text-white border-b-2 border-getir-yellow';
+        tabChronic.className = 'px-6 py-3 rounded-t-xl font-semibold transition-all bg-white/5 text-white/60 hover:bg-white/10';
+      } else if (tab === 'chronic') {
+        dashboardContainer.classList.add('hidden');
+        chronicContainer.classList.remove('hidden');
+        filtersSection.classList.add('hidden');
+
+        tabDashboard.className = 'px-6 py-3 rounded-t-xl font-semibold transition-all bg-white/5 text-white/60 hover:bg-white/10';
+        tabChronic.className = 'px-6 py-3 rounded-t-xl font-semibold transition-all bg-white/20 text-white border-b-2 border-getir-yellow';
+
+        // Metrik listesini doldur
+        populateChronicMetricFilter();
+        // Kronik depo analizini yükle
+        loadChronicAnalysis();
+      }
+    }
+
+    // === KRONİK DEPO ANALİZİ ===
+    function populateChronicMetricFilter() {
+      const select = document.getElementById('chronicMetricFilter');
+      if (!select || !currentData) return;
+
+      const metrics = currentData
+        .filter(m => !m._isDummy)
+        .map(m => m.name)
+        .filter(name => !["Achieve Waste + Waste A&M ratio target",
+                         "Decrease the number of pending + rejected pallet backlog (Ops)"].includes(name));
+
+      select.innerHTML = '<option value="all">Tüm Metrikler</option>';
+      metrics.forEach(metric => {
+        const option = document.createElement('option');
+        option.value = metric;
+        option.textContent = metric;
+        select.appendChild(option);
+      });
+    }
+
+    function loadChronicAnalysis() {
+      const domain = document.getElementById('chronicDomainFilter').value;
+      const metricName = document.getElementById('chronicMetricFilter').value;
+      const content = document.getElementById('chronicContent');
+
+      content.innerHTML = '<div class="text-center text-white/60 py-12">Yükleniyor...</div>';
+
+      google.script.run
+        .withSuccessHandler(renderChronicAnalysis)
+        .withFailureHandler(() => {
+          content.innerHTML = '<div class="text-center text-red-400 py-12">Veri yüklenemedi.</div>';
+        })
+        .getChronicWarehouseAnalysis(domain, 4, metricName);
+    }
+
+    function renderChronicAnalysis(data) {
+      const content = document.getElementById('chronicContent');
+
+      if (!data) {
+        content.innerHTML = '<div class="text-center text-white/60 py-12">Veri bulunamadı.</div>';
+        return;
+      }
+
+      let html = '';
+
+      // İstatistikler
+      html += `
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          ${Object.entries(data.stats || {}).map(([domain, stats]) => `
+            <div class="glass-morphism-dark rounded-xl p-6 border border-white/20">
+              <h3 class="text-lg font-bold text-white mb-4">${domain} İstatistikleri</h3>
+              <div class="space-y-2 text-sm">
+                <div class="flex justify-between">
+                  <span class="text-white/60">Toplam Depo:</span>
+                  <span class="text-white font-semibold">${stats.totalWarehouses || 0}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-white/60">Kronik:</span>
+                  <span class="text-red-400 font-semibold">${stats.chronicCount || 0}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-white/60">İyileşen:</span>
+                  <span class="text-green-400 font-semibold">${stats.improvingCount || 0}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-white/60">Kötüleşen:</span>
+                  <span class="text-orange-400 font-semibold">${stats.decliningCount || 0}</span>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>`;
+
+      // Kronik Depolar
+      if (data.chronic && data.chronic.length > 0) {
+        html += renderChronicTable(data.chronic, '🔴 Kronik Olarak Hedef Altında Kalanlar', 'chronic');
+      }
+
+      // İyileşen Depolar
+      if (data.improving && data.improving.length > 0) {
+        html += renderChronicTable(data.improving, '📈 İyileşme Gösterenler', 'improving');
+      }
+
+      // Kötüleşen Depolar
+      if (data.declining && data.declining.length > 0) {
+        html += renderChronicTable(data.declining, '📉 Kötüleşenler', 'declining');
+      }
+
+      content.innerHTML = html || '<div class="text-center text-white/60 py-12">Analiz için yeterli veri yok.</div>';
+    }
+
+    function renderChronicTable(warehouses, title, type) {
+      let html = `
+        <div class="mb-8">
+          <h3 class="text-xl font-bold text-white mb-4">${title}</h3>
+          <div class="overflow-x-auto rounded-xl">
+            <table class="min-w-full text-sm">
+              <thead class="bg-white/10 text-white/80">
+                <tr>
+                  <th class="text-left px-4 py-3">#</th>
+                  <th class="text-left px-4 py-3">Depo</th>
+                  <th class="text-left px-4 py-3">Domain</th>`;
+
+      if (type === 'chronic') {
+        html += `
+                  <th class="text-left px-4 py-3">Kroniklik Oranı</th>
+                  <th class="text-left px-4 py-3">Ort. Performans</th>
+                  <th class="text-left px-4 py-3">Toplam Hafta</th>`;
+      } else {
+        html += `
+                  <th class="text-left px-4 py-3">Değişim</th>
+                  <th class="text-left px-4 py-3">Eski Perf.</th>
+                  <th class="text-left px-4 py-3">Yeni Perf.</th>`;
+      }
+
+      html += `
+                </tr>
+              </thead>
+              <tbody class="bg-white/5 text-white">`;
+
+      warehouses.forEach((wh, idx) => {
+        const bgClass = idx % 2 === 0 ? 'bg-white/5' : '';
+        html += `
+                <tr class="${bgClass} hover:bg-white/10 transition">
+                  <td class="px-4 py-3 font-bold text-white/40">#${idx + 1}</td>
+                  <td class="px-4 py-3 font-semibold">${wh.warehouse}</td>
+                  <td class="px-4 py-3">${wh.domain}</td>`;
+
+        if (type === 'chronic') {
+          html += `
+                  <td class="px-4 py-3">
+                    <span class="px-2 py-1 rounded-lg text-xs font-semibold bg-red-400/20 text-red-400">
+                      %${Math.round(wh.chronicRatio || 0)}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3">
+                    <div class="flex items-center space-x-2">
+                      <div class="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
+                        <div class="h-full bg-gradient-to-r from-red-400 to-red-500"
+                             style="width: ${Math.min(100, wh.avgPerformance || 0)}%"></div>
+                      </div>
+                      <span class="text-xs font-bold">${Math.round(wh.avgPerformance || 0)}%</span>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3">${wh.totalWeeks || 0} hafta</td>`;
+        } else if (type === 'improving') {
+          html += `
+                  <td class="px-4 py-3">
+                    <span class="px-2 py-1 rounded-lg text-xs font-semibold bg-green-400/20 text-green-400">
+                      +${Math.round(wh.improvement || 0)}%
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 text-red-400">${Math.round(wh.oldPerformance || 0)}%</td>
+                  <td class="px-4 py-3 text-green-400">${Math.round(wh.newPerformance || 0)}%</td>`;
+        } else if (type === 'declining') {
+          html += `
+                  <td class="px-4 py-3">
+                    <span class="px-2 py-1 rounded-lg text-xs font-semibold bg-orange-400/20 text-orange-400">
+                      -${Math.round(wh.decline || 0)}%
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 text-green-400">${Math.round(wh.oldPerformance || 0)}%</td>
+                  <td class="px-4 py-3 text-red-400">${Math.round(wh.newPerformance || 0)}%</td>`;
+        }
+
+        html += `
+                </tr>`;
+      });
+
+      html += `
+              </tbody>
+            </table>
+          </div>
+        </div>`;
+
+      return html;
+    }
   </script>
 
   <!-- Depo Detay Modal -->
@@ -1466,6 +2201,23 @@ function renderUniqueOKRCount(okrs){
           <tbody id="warehouseModalBody" class="bg-white/5 text-white"></tbody>
         </table>
       </div>
+    </div>
+  </div>
+
+  <!-- Aksiyon Planı Modal -->
+  <div id="actionPlanModal" class="fixed inset-0 z-[100] hidden">
+    <div class="absolute inset-0 bg-black/60" onclick="closeActionPlanModal()"></div>
+    <div class="relative max-w-6xl mx-auto mt-12 glass-morphism rounded-2xl p-6 border border-white/20 max-h-[85vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-4 sticky top-0 bg-gradient-to-r from-getir-purple to-getir-purple-light p-4 rounded-xl z-10">
+        <div>
+          <h3 class="text-xl font-bold text-white">✏️ Aksiyon Planı - En Kötü 10 Depo</h3>
+          <p id="actionPlanModalSubtitle" class="text-white/80 text-sm"></p>
+        </div>
+        <button class="px-4 py-2 glass-morphism text-white rounded-xl border border-white/20 hover:bg-white/20"
+                onclick="closeActionPlanModal()">Kapat</button>
+      </div>
+
+      <div id="actionPlanModalBody" class="space-y-6 mt-4"></div>
     </div>
   </div>
 </body>

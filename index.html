@@ -534,7 +534,20 @@
   </div><!-- /grid -->
 
   <!-- Performans Tabloları -->
-  <div id="performanceTablesContainer" class="mb-8"></div>
+  <div id="performanceTablesContainer" class="mb-8">
+    <!-- Loading placeholder -->
+    <div class="glass-morphism rounded-2xl p-8 border border-white/20 mb-8">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold text-white flex items-center">
+          <span class="w-1 h-8 bg-gradient-to-b from-getir-yellow to-yellow-300 rounded-full mr-3"></span>
+          Yönetici Performans Tabloları
+        </h2>
+      </div>
+      <div class="text-center text-white/60 py-8">
+        <div class="animate-pulse">Yükleniyor...</div>
+      </div>
+    </div>
+  </div>
 
   <!-- Genel İlerleme -->
   <div class="glass-morphism rounded-2xl p-8 mb-8 border border-white/20">
@@ -1554,18 +1567,28 @@ function renderUniqueOKRCount(okrs){
     function renderPerformanceTables(data) {
       console.log('renderPerformanceTables called with data:', data);
 
-      if (!data) {
-        console.log('No data provided to renderPerformanceTables');
-        return;
-      }
-
-      performanceData = data;
-
       const container = document.getElementById('performanceTablesContainer');
       if (!container) {
         console.log('performanceTablesContainer not found');
         return;
       }
+
+      if (!data) {
+        console.log('No data provided to renderPerformanceTables');
+        container.innerHTML = `
+          <div class="glass-morphism rounded-2xl p-8 border border-white/20 mb-8">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-2xl font-bold text-white flex items-center">
+                <span class="w-1 h-8 bg-gradient-to-b from-getir-yellow to-yellow-300 rounded-full mr-3"></span>
+                Yönetici Performans Tabloları
+              </h2>
+            </div>
+            <div class="text-center text-red-400 py-8">⚠️ Veri yüklenemedi</div>
+          </div>`;
+        return;
+      }
+
+      performanceData = data;
 
       const hasData = (data.operasyonMudurleri && data.operasyonMudurleri.length > 0) ||
                       (data.sahaYoneticileri && data.sahaYoneticileri.length > 0);
@@ -1573,8 +1596,17 @@ function renderUniqueOKRCount(okrs){
       console.log('Has data:', hasData, 'Ops:', data.operasyonMudurleri?.length, 'Saha:', data.sahaYoneticileri?.length);
 
       if (!hasData) {
-        console.log('No manager data available, hiding container');
-        container.innerHTML = '';
+        console.log('No manager data available');
+        container.innerHTML = `
+          <div class="glass-morphism rounded-2xl p-8 border border-white/20 mb-8">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-2xl font-bold text-white flex items-center">
+                <span class="w-1 h-8 bg-gradient-to-b from-getir-yellow to-yellow-300 rounded-full mr-3"></span>
+                Yönetici Performans Tabloları
+              </h2>
+            </div>
+            <div class="text-center text-white/60 py-8">ℹ️ Seçili filtrelere uygun yönetici verisi bulunamadı</div>
+          </div>`;
         return;
       }
 
